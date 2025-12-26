@@ -1,20 +1,20 @@
-import React from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import clsx from "clsx";
 import {
-  LayoutDashboard,
   Building2,
-  Users,
-  Shield,
-  FolderTree,
-  Settings,
-  LogOut,
   ChevronLeft,
   ChevronRight,
-  Menu,
+  FolderTree,
+  HelpCircle,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Shield,
+  Users,
 } from "lucide-react";
+import React from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useSidebarStore } from "../../store/useSidebarStore";
-import clsx from "clsx";
 
 interface NavItem {
   path: string;
@@ -23,12 +23,33 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { path: "/dashboard", label: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
-  { path: "/clients", label: "Clients", icon: <Building2 className="w-5 h-5" /> },
+  {
+    path: "/dashboard",
+    label: "Dashboard",
+    icon: <LayoutDashboard className="w-5 h-5" />,
+  },
+  {
+    path: "/clients",
+    label: "Clients",
+    icon: <Building2 className="w-5 h-5" />,
+  },
   { path: "/users", label: "Users", icon: <Users className="w-5 h-5" /> },
   { path: "/roles", label: "Roles", icon: <Shield className="w-5 h-5" /> },
-  { path: "/departments", label: "Departments", icon: <FolderTree className="w-5 h-5" /> },
-  { path: "/settings", label: "Settings", icon: <Settings className="w-5 h-5" /> },
+  {
+    path: "/departments",
+    label: "Departments",
+    icon: <FolderTree className="w-5 h-5" />,
+  },
+  {
+    path: "/questions",
+    label: "Questions",
+    icon: <HelpCircle className="w-5 h-5" />,
+  },
+  {
+    path: "/settings",
+    label: "Settings",
+    icon: <Settings className="w-5 h-5" />,
+  },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -63,7 +84,11 @@ export const Sidebar: React.FC = () => {
             onClick={toggleSidebar}
             className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
           >
-            {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+            {isCollapsed ? (
+              <ChevronRight className="w-5 h-5" />
+            ) : (
+              <ChevronLeft className="w-5 h-5" />
+            )}
           </button>
         </div>
       </div>
@@ -97,13 +122,16 @@ export const Sidebar: React.FC = () => {
           <div className="mb-4 p-3 rounded-xl bg-secondary-800/50 animate-fadeIn">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-semibold">
-                {user.firstName?.[0]}{user.lastName?.[0]}
+                {user.firstName?.[0]}
+                {user.lastName?.[0]}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">
                   {user.firstName} {user.lastName}
                 </p>
-                <p className="text-xs text-secondary-400 truncate">{user.email}</p>
+                <p className="text-xs text-secondary-400 truncate">
+                  {user.email}
+                </p>
               </div>
             </div>
           </div>

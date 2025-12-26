@@ -1,17 +1,20 @@
 import React, { useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import { MainLayout } from "./components/layouts/MainLayout";
-import { Login } from "./pages/Login";
-import { Dashboard } from "./pages/Dashboard";
 import { Clients } from "./pages/Clients";
-import { Users } from "./pages/Users";
-import { Roles } from "./pages/Roles";
+import { Dashboard } from "./pages/Dashboard";
 import { Departments } from "./pages/Departments";
+import { Login } from "./pages/Login";
+import { Questions } from "./pages/Questions";
+import { Roles } from "./pages/Roles";
 import { Settings } from "./pages/Settings";
+import { Users } from "./pages/Users";
 import { useAuthStore } from "./store/useAuthStore";
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { isAuthenticated, isLoading } = useAuthStore();
 
   if (isLoading) {
@@ -52,7 +55,7 @@ const App: React.FC = () => {
       />
       <Routes>
         <Route path="/login" element={<Login />} />
-        
+
         <Route
           path="/"
           element={
@@ -67,6 +70,7 @@ const App: React.FC = () => {
           <Route path="users" element={<Users />} />
           <Route path="roles" element={<Roles />} />
           <Route path="departments" element={<Departments />} />
+          <Route path="questions" element={<Questions />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 

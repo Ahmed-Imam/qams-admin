@@ -1,9 +1,9 @@
+import clsx from "clsx";
 import React from "react";
-import { Outlet, Navigate } from "react-router-dom";
-import { Sidebar } from "../sidebar/Sidebar";
+import { Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useSidebarStore } from "../../store/useSidebarStore";
-import clsx from "clsx";
+import { Sidebar } from "../sidebar/Sidebar";
 
 export const MainLayout: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuthStore();

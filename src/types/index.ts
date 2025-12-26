@@ -137,3 +137,54 @@ export interface CreateDepartmentDto {
   description?: string;
   client: string;
 }
+
+// Question types
+export interface QuestionOption {
+  id: string;
+  label: string;
+}
+
+export interface Question {
+  _id: string;
+  questionId: string;
+  questionTitle: string;
+  description?: string;
+  type: 'single' | 'multi';
+  options: QuestionOption[];
+  facilityType?: string;
+  order?: number;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateQuestionDto {
+  questionId: string;
+  questionTitle: string;
+  description?: string;
+  type: 'single' | 'multi';
+  options: QuestionOption[];
+  facilityType?: string;
+  order?: number;
+  isActive?: boolean;
+}
+
+export interface UpdateQuestionDto {
+  questionId?: string;
+  questionTitle?: string;
+  description?: string;
+  type?: 'single' | 'multi';
+  options?: QuestionOption[];
+  facilityType?: string;
+  order?: number;
+  isActive?: boolean;
+}
+
+export interface GetQuestionsQuery {
+  facilityType?: string;
+  type?: 'single' | 'multi';
+  isActive?: boolean;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
