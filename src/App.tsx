@@ -9,6 +9,7 @@ import { Login } from "./pages/Login";
 import { Questions } from "./pages/Questions";
 import { Roles } from "./pages/Roles";
 import { Settings } from "./pages/Settings";
+import { Templates } from "./pages/Templates";
 import { Users } from "./pages/Users";
 import { useAuthStore } from "./store/useAuthStore";
 
@@ -71,6 +72,7 @@ const App: React.FC = () => {
           <Route path="roles" element={<Roles />} />
           <Route path="departments" element={<Departments />} />
           <Route path="questions" element={<Questions />} />
+          <Route path="templates" element={<Templates />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 

@@ -188,3 +188,57 @@ export interface GetQuestionsQuery {
   page?: number;
   limit?: number;
 }
+
+// Template types
+export type TemplateType = 'document' | 'form_and_logs' | 'incident_report' | 'capa';
+
+export interface OnboardingTemplate {
+  _id: string;
+  id: string;
+  name: string;
+  templateType: TemplateType;
+  type: string;
+  accreditation: string[];
+  facilityType?: string[];
+  triggerIds: string[];
+  relatedDocuments?: string[];
+  content?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateTemplateDto {
+  id: string;
+  name: string;
+  templateType: TemplateType;
+  type: string;
+  accreditation: string[];
+  facilityType?: string[];
+  triggerIds: string[];
+  relatedDocuments?: string[];
+  content?: string;
+}
+
+export interface UpdateTemplateDto {
+  id?: string;
+  name?: string;
+  templateType?: TemplateType;
+  type?: string;
+  accreditation?: string[];
+  facilityType?: string[];
+  triggerIds?: string[];
+  relatedDocuments?: string[];
+  content?: string;
+}
+
+export interface GetTemplatesQuery {
+  templateType?: TemplateType;
+  type?: string;
+  accreditation?: string;
+  facilityType?: string;
+  triggerId?: string;
+  triggerIds?: string[];
+  search?: string;
+  page?: number;
+  limit?: number;
+}

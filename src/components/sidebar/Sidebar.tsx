@@ -3,6 +3,7 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  FileText,
   FolderTree,
   HelpCircle,
   LayoutDashboard,
@@ -44,6 +45,11 @@ const navItems: NavItem[] = [
     path: "/questions",
     label: "Questions",
     icon: <HelpCircle className="w-5 h-5" />,
+  },
+  {
+    path: "/templates",
+    label: "Templates",
+    icon: <FileText className="w-5 h-5" />,
   },
   {
     path: "/settings",
