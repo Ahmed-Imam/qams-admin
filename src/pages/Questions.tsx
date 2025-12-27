@@ -10,7 +10,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { questionsAPI } from "../api/questions";
 import type { CreateQuestionDto, Question } from "../types";
@@ -35,10 +35,18 @@ export const Questions: React.FC = () => {
     description: "",
     type: "single",
     options: [{ id: "", label: "" }],
-    facilityType: "",
+    facilityType: [],
     order: 0,
     isActive: true,
   });
+  const [facilityTypeSuggestions, setFacilityTypeSuggestions] = useState<
+    string[]
+  >([]);
+  const [facilityTypeInput, setFacilityTypeInput] = useState("");
+  const [showFacilityTypeDropdown, setShowFacilityTypeDropdown] =
+    useState(false);
+  const facilityTypeInputRef = useRef<HTMLInputElement>(null);
+  const facilityTypeDropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -97,9 +105,19 @@ export const Questions: React.FC = () => {
     }
 
     try {
+      // Normalize facilityType to array or undefined
+      const facilityTypes = Array.isArray(formData.facilityType)
+        ? formData.facilityType
+        : formData.facilityType
+        ? [formData.facilityType]
+        : [];
+      const normalizedFacilityType =
+        facilityTypes.length > 0 ? facilityTypes : undefined;
+
       const submitData = {
         ...formData,
         options: validOptions,
+        facilityType: normalizedFacilityType,
       };
 
       if (editingQuestion) {
@@ -118,6 +136,11 @@ export const Questions: React.FC = () => {
 
   const handleEdit = (question: Question) => {
     setEditingQuestion(question);
+    const facilityTypes = Array.isArray(question.facilityType)
+      ? question.facilityType
+      : question.facilityType
+      ? [question.facilityType]
+      : [];
     setFormData({
       questionId: question.questionId,
       questionTitle: question.questionTitle,
@@ -127,10 +150,11 @@ export const Questions: React.FC = () => {
         question.options.length > 0
           ? question.options
           : [{ id: "", label: "" }],
-      facilityType: question.facilityType || "",
+      facilityType: facilityTypes,
       order: question.order || 0,
       isActive: question.isActive ?? true,
     });
+    setFacilityTypeInput("");
     setShowModal(true);
   };
 
@@ -156,11 +180,49 @@ export const Questions: React.FC = () => {
       description: "",
       type: "single",
       options: [{ id: "", label: "" }],
-      facilityType: "",
+      facilityType: [],
       order: 0,
       isActive: true,
     });
+    setFacilityTypeInput("");
+    setShowFacilityTypeDropdown(false);
   };
+
+  // Fetch FACILITY_TYPE question options for autocomplete
+  useEffect(() => {
+    const fetchFacilityTypeOptions = async () => {
+      if (!showModal) return;
+      try {
+        const facilityTypeQuestion = await questionsAPI.getByQuestionId(
+          "FACILITY_TYPE"
+        );
+        if (facilityTypeQuestion?.options) {
+          const optionIds = facilityTypeQuestion.options.map((opt) => opt.id);
+          setFacilityTypeSuggestions(optionIds);
+        }
+      } catch (error) {
+        // Silently fail if FACILITY_TYPE question doesn't exist
+        console.warn("FACILITY_TYPE question not found");
+      }
+    };
+    fetchFacilityTypeOptions();
+  }, [showModal]);
+
+  // Handle clicks outside facility type dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        facilityTypeDropdownRef.current &&
+        !facilityTypeDropdownRef.current.contains(event.target as Node) &&
+        facilityTypeInputRef.current &&
+        !facilityTypeInputRef.current.contains(event.target as Node)
+      ) {
+        setShowFacilityTypeDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const addOption = () => {
     setFormData({
@@ -188,10 +250,57 @@ export const Questions: React.FC = () => {
     setFormData({ ...formData, options: newOptions });
   };
 
+  const addFacilityType = (facilityType: string) => {
+    const currentTypes = Array.isArray(formData.facilityType)
+      ? formData.facilityType
+      : formData.facilityType
+      ? [formData.facilityType]
+      : [];
+    if (!currentTypes.includes(facilityType) && facilityType.trim()) {
+      setFormData({
+        ...formData,
+        facilityType: [...currentTypes, facilityType.trim()],
+      });
+    }
+    setFacilityTypeInput("");
+    setShowFacilityTypeDropdown(false);
+  };
+
+  const removeFacilityType = (facilityType: string) => {
+    const currentTypes = Array.isArray(formData.facilityType)
+      ? formData.facilityType
+      : formData.facilityType
+      ? [formData.facilityType]
+      : [];
+    setFormData({
+      ...formData,
+      facilityType: currentTypes.filter((ft) => ft !== facilityType),
+    });
+  };
+
+  const filteredSuggestions = facilityTypeSuggestions.filter(
+    (suggestion) =>
+      suggestion.toLowerCase().includes(facilityTypeInput.toLowerCase()) &&
+      !(
+        Array.isArray(formData.facilityType)
+          ? formData.facilityType
+          : formData.facilityType
+          ? [formData.facilityType]
+          : []
+      ).includes(suggestion)
+  );
+
   // Extract unique facility types from questions
   const facilityTypes = Array.from(
     new Set(
-      questions.map((q) => q.facilityType).filter((ft): ft is string => !!ft)
+      questions
+        .flatMap((q) => {
+          if (Array.isArray(q.facilityType)) {
+            return q.facilityType;
+          }
+          return q.facilityType ? [q.facilityType] : [];
+        })
+        .filter((ft): ft is string => !!ft)
     )
   );
 
@@ -214,7 +323,22 @@ export const Questions: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            setEditingQuestion(null);
+            setFormData({
+              questionId: "",
+              questionTitle: "",
+              description: "",
+              type: "single",
+              options: [{ id: "", label: "" }],
+              facilityType: [],
+              order: 0,
+              isActive: true,
+            });
+            setFacilityTypeInput("");
+            setShowFacilityTypeDropdown(false);
+            setShowModal(true);
+          }}
           className="btn-primary flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
@@ -346,13 +470,27 @@ export const Questions: React.FC = () => {
                     </span>
                   </td>
                   <td className="table-cell">
-                    {question.facilityType ? (
-                      <span className="text-secondary-300">
-                        {question.facilityType}
-                      </span>
-                    ) : (
-                      <span className="text-secondary-500">All</span>
-                    )}
+                    {(() => {
+                      const facilityTypes = Array.isArray(question.facilityType)
+                        ? question.facilityType
+                        : question.facilityType
+                        ? [question.facilityType]
+                        : [];
+                      return facilityTypes.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {facilityTypes.map((ft, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-1 rounded text-xs bg-secondary-700/50 text-secondary-300"
+                            >
+                              {ft}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-secondary-500">All</span>
+                      );
+                    })()}
                   </td>
                   <td className="table-cell">
                     <span className="text-secondary-300">
@@ -554,19 +692,100 @@ export const Questions: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="relative">
                   <label className="block text-sm font-medium text-secondary-300 mb-2">
                     Facility Type
                   </label>
-                  <input
-                    type="text"
-                    value={formData.facilityType}
-                    onChange={(e) =>
-                      setFormData({ ...formData, facilityType: e.target.value })
-                    }
-                    className="input-field"
-                    placeholder="e.g., FT_HOSPITAL (optional)"
-                  />
+                  <div className="space-y-2">
+                    {/* Selected facility types */}
+                    {(() => {
+                      const selectedTypes = Array.isArray(formData.facilityType)
+                        ? formData.facilityType
+                        : formData.facilityType
+                        ? [formData.facilityType]
+                        : [];
+                      return selectedTypes.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedTypes.map((ft) => (
+                            <span
+                              key={ft}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-primary-500/20 text-primary-300 text-sm"
+                            >
+                              {ft}
+                              <button
+                                type="button"
+                                onClick={() => removeFacilityType(ft)}
+                                className="hover:text-primary-200 transition-colors"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      ) : null;
+                    })()}
+                    {/* Autocomplete input */}
+                    <div className="relative" ref={facilityTypeDropdownRef}>
+                      <input
+                        ref={facilityTypeInputRef}
+                        type="text"
+                        value={facilityTypeInput}
+                        onChange={(e) => {
+                          setFacilityTypeInput(e.target.value);
+                          setShowFacilityTypeDropdown(true);
+                        }}
+                        onFocus={() => setShowFacilityTypeDropdown(true)}
+                        onKeyDown={(e) => {
+                          if (
+                            e.key === "Enter" &&
+                            filteredSuggestions.length > 0
+                          ) {
+                            e.preventDefault();
+                            addFacilityType(filteredSuggestions[0]);
+                          } else if (
+                            e.key === "Enter" &&
+                            facilityTypeInput.trim()
+                          ) {
+                            e.preventDefault();
+                            addFacilityType(facilityTypeInput.trim());
+                          } else if (e.key === "Escape") {
+                            setShowFacilityTypeDropdown(false);
+                          }
+                        }}
+                        className="input-field"
+                        placeholder="Type to search facility types..."
+                      />
+                      {/* Dropdown suggestions */}
+                      {showFacilityTypeDropdown &&
+                        (filteredSuggestions.length > 0 ||
+                          facilityTypeInput.trim()) && (
+                          <div className="absolute z-10 w-full mt-1 bg-secondary-800 border border-secondary-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            {filteredSuggestions.length > 0 ? (
+                              filteredSuggestions.map((suggestion) => (
+                                <button
+                                  key={suggestion}
+                                  type="button"
+                                  onClick={() => addFacilityType(suggestion)}
+                                  className="w-full text-left px-4 py-2 hover:bg-secondary-700 text-secondary-300 hover:text-white transition-colors"
+                                >
+                                  {suggestion}
+                                </button>
+                              ))
+                            ) : facilityTypeInput.trim() ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  addFacilityType(facilityTypeInput.trim())
+                                }
+                                className="w-full text-left px-4 py-2 hover:bg-secondary-700 text-secondary-300 hover:text-white transition-colors"
+                              >
+                                Add "{facilityTypeInput.trim()}"
+                              </button>
+                            ) : null}
+                          </div>
+                        )}
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-secondary-300 mb-2">

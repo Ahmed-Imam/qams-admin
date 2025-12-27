@@ -14,7 +14,7 @@ export interface User {
   updatedAt: string;
 }
 
-export type UserStatus = 'active' | 'invited' | 'inactive' | 'suspended';
+export type UserStatus = "active" | "invited" | "inactive" | "suspended";
 
 export interface Role {
   _id: string;
@@ -47,7 +47,12 @@ export interface Client {
   updatedAt: string;
 }
 
-export type ClientType = 'hospital' | 'laboratory' | 'clinic' | 'pharmacy' | 'other';
+export type ClientType =
+  | "hospital"
+  | "laboratory"
+  | "clinic"
+  | "pharmacy"
+  | "other";
 
 // Auth types
 export interface LoginCredentials {
@@ -149,9 +154,9 @@ export interface Question {
   questionId: string;
   questionTitle: string;
   description?: string;
-  type: 'single' | 'multi';
+  type: "single" | "multi";
   options: QuestionOption[];
-  facilityType?: string;
+  facilityType?: string | string[];
   order?: number;
   isActive?: boolean;
   createdAt?: string;
@@ -162,9 +167,9 @@ export interface CreateQuestionDto {
   questionId: string;
   questionTitle: string;
   description?: string;
-  type: 'single' | 'multi';
+  type: "single" | "multi";
   options: QuestionOption[];
-  facilityType?: string;
+  facilityType?: string | string[];
   order?: number;
   isActive?: boolean;
 }
@@ -173,16 +178,16 @@ export interface UpdateQuestionDto {
   questionId?: string;
   questionTitle?: string;
   description?: string;
-  type?: 'single' | 'multi';
+  type?: "single" | "multi";
   options?: QuestionOption[];
-  facilityType?: string;
+  facilityType?: string | string[];
   order?: number;
   isActive?: boolean;
 }
 
 export interface GetQuestionsQuery {
   facilityType?: string;
-  type?: 'single' | 'multi';
+  type?: "single" | "multi";
   isActive?: boolean;
   search?: string;
   page?: number;
@@ -190,7 +195,11 @@ export interface GetQuestionsQuery {
 }
 
 // Template types
-export type TemplateType = 'document' | 'form_and_logs' | 'incident_report' | 'capa';
+export type TemplateType =
+  | "document"
+  | "form_and_logs"
+  | "incident_report"
+  | "capa";
 
 export interface OnboardingTemplate {
   _id: string;
