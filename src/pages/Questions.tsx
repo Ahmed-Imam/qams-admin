@@ -417,7 +417,7 @@ export const Questions: React.FC = () => {
           <table className="w-full">
             <thead>
               <tr className="border-b border-secondary-700/50">
-                <th className="table-header">Question ID</th>
+                <th className="table-header">Question Code</th>
                 <th className="table-header max-w-xs">Title</th>
                 <th className="table-header">Type</th>
                 <th className="table-header">Facility Type</th>
@@ -623,7 +623,7 @@ export const Questions: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Question ID *
+                    Question Code *
                   </label>
                   <input
                     type="text"

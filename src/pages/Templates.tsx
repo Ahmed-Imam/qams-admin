@@ -12,12 +12,11 @@ import {
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import type { Accreditation } from "../api/accreditations";
+import { accreditationsAPI } from "../api/accreditations";
 import { questionsAPI } from "../api/questions";
 import { templatesAPI } from "../api/templates";
 import type { CreateTemplateDto, OnboardingTemplate, Question } from "../types";
-
-// Constant list of accreditations used in templates
-const ACCREDITATIONS = ["CBAHI", "ISO 9001", "ISO 15189", "CAP", "JCI"];
 
 // Autocomplete component for facilityType and triggerIds
 interface AutocompleteInputProps {
@@ -128,6 +127,7 @@ const templateTypes: Array<{ value: string; label: string }> = [
 export const Templates: React.FC = () => {
   const [templates, setTemplates] = useState<OnboardingTemplate[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [accreditations, setAccreditations] = useState<Accreditation[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [templateTypeFilter, setTemplateTypeFilter] = useState<string>("all");
@@ -165,8 +165,10 @@ export const Templates: React.FC = () => {
     return Array.from(options).sort();
   }, [questions]);
 
-  // Use constant list of accreditations
-  const accreditationOptions = ACCREDITATIONS;
+  // Get accreditation options from API (accreditations without client)
+  const accreditationOptions = useMemo(() => {
+    return accreditations.map((acc) => acc.name || acc.code).filter(Boolean);
+  }, [accreditations]);
 
   const fetchQuestions = async () => {
     try {
@@ -174,6 +176,17 @@ export const Templates: React.FC = () => {
       setQuestions(response.data || []);
     } catch (error) {
       console.error("Failed to fetch questions:", error);
+    }
+  };
+
+  const fetchAccreditations = async () => {
+    try {
+      // Fetch accreditations without client (no clientId parameter)
+      const accreditationsList = await accreditationsAPI.getAll();
+      setAccreditations(accreditationsList || []);
+    } catch (error) {
+      console.error("Failed to fetch accreditations:", error);
+      toast.error("Failed to load accreditations");
     }
   };
 
@@ -207,6 +220,7 @@ export const Templates: React.FC = () => {
 
   useEffect(() => {
     fetchQuestions();
+    fetchAccreditations();
   }, []);
 
   useEffect(() => {
@@ -628,7 +642,7 @@ export const Templates: React.FC = () => {
                 options={autocompleteOptions.filter((opt) =>
                   opt.startsWith("FT_")
                 )}
-                placeholder="Search question IDs or option IDs..."
+                placeholder="Search Option IDs..."
                 label="Facility Types (optional)"
               />
 
@@ -638,7 +652,7 @@ export const Templates: React.FC = () => {
                   setFormData({ ...formData, triggerIds: value })
                 }
                 options={autocompleteOptions}
-                placeholder="Search question IDs or option IDs..."
+                placeholder="Search Option IDs..."
                 label="Trigger IDs *"
               />
 
