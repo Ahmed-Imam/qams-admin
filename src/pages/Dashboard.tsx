@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from "react";
+import clsx from "clsx";
 import {
-  Building2,
-  Users,
-  UserCheck,
-  UserX,
-  ArrowUpRight,
   ArrowDownRight,
+  ArrowUpRight,
+  Building2,
+  UserCheck,
+  Users,
+  UserX,
 } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { clientsAPI } from "../api/clients";
 import { usersAPI } from "../api/users";
 import type { Client, User } from "../types";
-import clsx from "clsx";
 
 interface StatCard {
   title: string;
@@ -110,7 +110,9 @@ export const Dashboard: React.FC = () => {
             style={{ animationDelay: `${index * 0.1}s` }}
           >
             <div className="flex items-start justify-between mb-4">
-              <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.color} shadow-lg`}>
+              <div
+                className={`p-3 rounded-xl bg-gradient-to-br ${stat.color} shadow-lg`}
+              >
                 {stat.icon}
               </div>
               {stat.trend && (
@@ -159,14 +161,20 @@ export const Dashboard: React.FC = () => {
                   <Building2 className="w-6 h-6 text-primary-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-white truncate">{client.name}</p>
-                  <p className="text-sm text-secondary-400 capitalize">{client.type}</p>
+                  <p className="font-medium text-white truncate">
+                    {client.name}
+                  </p>
+                  <p className="text-sm text-secondary-400 capitalize">
+                    {client.type}
+                  </p>
                 </div>
                 <span className="badge-info">{client.classification}</span>
               </div>
             ))}
             {clients.length === 0 && (
-              <p className="text-center text-secondary-400 py-8">No clients found</p>
+              <p className="text-center text-secondary-400 py-8">
+                No clients found
+              </p>
             )}
           </div>
         </div>
@@ -190,13 +198,16 @@ export const Dashboard: React.FC = () => {
                 onClick={() => navigate(`/users/${user._id}`)}
               >
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-semibold">
-                  {user.firstName?.[0]}{user.lastName?.[0]}
+                  {user.firstName?.[0]}
+                  {user.lastName?.[0]}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-white truncate">
                     {user.firstName} {user.lastName}
                   </p>
-                  <p className="text-sm text-secondary-400 truncate">{user.email}</p>
+                  <p className="text-sm text-secondary-400 truncate">
+                    {user.email}
+                  </p>
                 </div>
                 <span
                   className={clsx(
@@ -208,7 +219,9 @@ export const Dashboard: React.FC = () => {
               </div>
             ))}
             {users.length === 0 && (
-              <p className="text-center text-secondary-400 py-8">No users found</p>
+              <p className="text-center text-secondary-400 py-8">
+                No users found
+              </p>
             )}
           </div>
         </div>

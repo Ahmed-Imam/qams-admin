@@ -14,7 +14,7 @@ export interface User {
   updatedAt: string;
 }
 
-export type UserStatus = 'active' | 'invited' | 'inactive' | 'suspended';
+export type UserStatus = "active" | "invited" | "inactive" | "suspended";
 
 export interface Role {
   _id: string;
@@ -47,7 +47,12 @@ export interface Client {
   updatedAt: string;
 }
 
-export type ClientType = 'hospital' | 'laboratory' | 'clinic' | 'pharmacy' | 'other';
+export type ClientType =
+  | "hospital"
+  | "laboratory"
+  | "clinic"
+  | "pharmacy"
+  | "other";
 
 // Auth types
 export interface LoginCredentials {
@@ -136,4 +141,113 @@ export interface CreateDepartmentDto {
   name: string;
   description?: string;
   client: string;
+}
+
+// Question types
+export interface QuestionOption {
+  id: string;
+  label: string;
+}
+
+export interface Question {
+  _id: string;
+  questionId: string;
+  questionTitle: string;
+  description?: string;
+  type: "single" | "multi";
+  options: QuestionOption[];
+  facilityType?: string | string[];
+  order?: number;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateQuestionDto {
+  questionId: string;
+  questionTitle: string;
+  description?: string;
+  type: "single" | "multi";
+  options: QuestionOption[];
+  facilityType?: string | string[];
+  order?: number;
+  isActive?: boolean;
+}
+
+export interface UpdateQuestionDto {
+  questionId?: string;
+  questionTitle?: string;
+  description?: string;
+  type?: "single" | "multi";
+  options?: QuestionOption[];
+  facilityType?: string | string[];
+  order?: number;
+  isActive?: boolean;
+}
+
+export interface GetQuestionsQuery {
+  facilityType?: string;
+  type?: "single" | "multi";
+  isActive?: boolean;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+// Template types
+export type TemplateType =
+  | "document"
+  | "form_and_logs"
+  | "incident_report"
+  | "capa";
+
+export interface OnboardingTemplate {
+  _id: string;
+  id: string;
+  name: string;
+  templateType: TemplateType;
+  type: string;
+  accreditation: string[];
+  facilityType?: string[];
+  triggerIds: string[];
+  relatedDocuments?: string[];
+  content?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateTemplateDto {
+  id: string;
+  name: string;
+  templateType: TemplateType;
+  type: string;
+  accreditation: string[];
+  facilityType?: string[];
+  triggerIds: string[];
+  relatedDocuments?: string[];
+  content?: string;
+}
+
+export interface UpdateTemplateDto {
+  id?: string;
+  name?: string;
+  templateType?: TemplateType;
+  type?: string;
+  accreditation?: string[];
+  facilityType?: string[];
+  triggerIds?: string[];
+  relatedDocuments?: string[];
+  content?: string;
+}
+
+export interface GetTemplatesQuery {
+  templateType?: TemplateType;
+  type?: string;
+  accreditation?: string;
+  facilityType?: string;
+  triggerId?: string;
+  triggerIds?: string[];
+  search?: string;
+  page?: number;
+  limit?: number;
 }
