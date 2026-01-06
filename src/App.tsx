@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import { MainLayout } from "./components/layouts/MainLayout";
+import { ActivityLogs } from "./pages/ActivityLogs";
 import { Clients } from "./pages/Clients";
 import { Dashboard } from "./pages/Dashboard";
 import { Departments } from "./pages/Departments";
@@ -73,6 +74,7 @@ const App: React.FC = () => {
           <Route path="departments" element={<Departments />} />
           <Route path="questions" element={<Questions />} />
           <Route path="templates" element={<Templates />} />
+          <Route path="activity-logs" element={<ActivityLogs />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 

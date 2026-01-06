@@ -6,6 +6,7 @@ import {
   FileText,
   FolderTree,
   HelpCircle,
+  History,
   LayoutDashboard,
   LogOut,
   Settings,
@@ -50,6 +51,11 @@ const navItems: NavItem[] = [
     path: "/templates",
     label: "Templates",
     icon: <FileText className="w-5 h-5" />,
+  },
+  {
+    path: "/activity-logs",
+    label: "Activity Logs",
+    icon: <History className="w-5 h-5" />,
   },
   {
     path: "/settings",
