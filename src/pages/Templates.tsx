@@ -14,9 +14,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Accreditation } from "../api/accreditations";
 import { accreditationsAPI } from "../api/accreditations";
+import { documentTypesAPI } from "../api/documentTypes";
 import { questionsAPI } from "../api/questions";
 import { templatesAPI } from "../api/templates";
-import type { CreateTemplateDto, OnboardingTemplate, Question } from "../types";
+import type {
+  CreateTemplateDto,
+  DocumentType,
+  OnboardingTemplate,
+  Question,
+} from "../types";
 
 // Autocomplete component for facilityType and triggerIds
 interface AutocompleteInputProps {
@@ -128,6 +134,7 @@ export const Templates: React.FC = () => {
   const [templates, setTemplates] = useState<OnboardingTemplate[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [accreditations, setAccreditations] = useState<Accreditation[]>([]);
+  const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [templateTypeFilter, setTemplateTypeFilter] = useState<string>("all");
@@ -190,6 +197,16 @@ export const Templates: React.FC = () => {
     }
   };
 
+  const fetchDocumentTypes = async () => {
+    try {
+      const types = await documentTypesAPI.getAllCommon();
+      setDocumentTypes(Array.isArray(types) ? types : []);
+    } catch (error) {
+      console.error("Failed to fetch document types:", error);
+      toast.error("Failed to load document types");
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -221,6 +238,7 @@ export const Templates: React.FC = () => {
   useEffect(() => {
     fetchQuestions();
     fetchAccreditations();
+    fetchDocumentTypes();
   }, []);
 
   useEffect(() => {
@@ -608,21 +626,39 @@ export const Templates: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Document Type *
-                </label>
-                <input
-                  type="text"
-                  value={formData.type}
-                  onChange={(e) =>
-                    setFormData({ ...formData, type: e.target.value })
-                  }
-                  className="input-field"
-                  placeholder="e.g., Policy, Manual, SOP"
-                  required
-                />
-              </div>
+              {formData.templateType === "document" && (
+                <div>
+                  <label className="block text-sm font-medium text-secondary-300 mb-2">
+                    Document Type *
+                  </label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) =>
+                      setFormData({ ...formData, type: e.target.value })
+                    }
+                    className="input-field"
+                    required
+                  >
+                    <option value="" className="bg-secondary-800">
+                      Select document type
+                    </option>
+                    {documentTypes.map((dt) => (
+                      <option
+                        key={dt._id}
+                        value={dt.code}
+                        className="bg-secondary-800"
+                      >
+                        {dt.name} ({dt.code})
+                      </option>
+                    ))}
+                  </select>
+                  {documentTypes.length === 0 && (
+                    <p className="text-xs text-secondary-500 mt-1">
+                      No common document types. Add them in Document Types first.
+                    </p>
+                  )}
+                </div>
+              )}
 
               <AutocompleteInput
                 value={formData.accreditation}
@@ -659,7 +695,7 @@ export const Templates: React.FC = () => {
               {formData.templateType === "document" && (
                 <div>
                   <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Content (HTML)
+                    Content
                   </label>
                   <textarea
                     value={formData.content}
@@ -667,7 +703,7 @@ export const Templates: React.FC = () => {
                       setFormData({ ...formData, content: e.target.value })
                     }
                     className="input-field min-h-[200px] resize-none font-mono text-sm"
-                    placeholder="HTML content for document template"
+                    placeholder="Template content (e.g. HTML for document templates)"
                   />
                 </div>
               )}
