@@ -3,6 +3,7 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  FileStack,
   FileText,
   FolderTree,
   HelpCircle,
@@ -51,6 +52,11 @@ const navItems: NavItem[] = [
     path: "/templates",
     label: "Templates",
     icon: <FileText className="w-5 h-5" />,
+  },
+  {
+    path: "/document-types",
+    label: "Document Types",
+    icon: <FileStack className="w-5 h-5" />,
   },
   {
     path: "/activity-logs",

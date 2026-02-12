@@ -6,6 +6,7 @@ import { ActivityLogs } from "./pages/ActivityLogs";
 import { Clients } from "./pages/Clients";
 import { Dashboard } from "./pages/Dashboard";
 import { Departments } from "./pages/Departments";
+import { DocumentTypes } from "./pages/DocumentTypes";
 import { Login } from "./pages/Login";
 import { Questions } from "./pages/Questions";
 import { Roles } from "./pages/Roles";
@@ -74,6 +75,7 @@ const App: React.FC = () => {
           <Route path="departments" element={<Departments />} />
           <Route path="questions" element={<Questions />} />
           <Route path="templates" element={<Templates />} />
+          <Route path="document-types" element={<DocumentTypes />} />
           <Route path="activity-logs" element={<ActivityLogs />} />
           <Route path="settings" element={<Settings />} />
         </Route>

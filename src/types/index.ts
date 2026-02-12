@@ -251,3 +251,70 @@ export interface GetTemplatesQuery {
   page?: number;
   limit?: number;
 }
+
+// Document type enums (match qams-api)
+export const DocumentTypeRule = {
+  REQUIRE_APPROVAL: "require_approval",
+  REQUIRE_TRAINING: "require_training",
+  REQUIRE_VERSIONING: "require_versioning",
+  APPEARS_IN_TRAINING: "appears_in_training",
+  EDITABLE_AFTER_APPROVAL: "editable_after_approval",
+  AUTO_PUBLISH_ON_APPROVAL: "auto_publish_on_approval",
+} as const;
+export type DocumentTypeRule =
+  (typeof DocumentTypeRule)[keyof typeof DocumentTypeRule];
+
+export const DocumentTypeIntegration = {
+  FORMS: "forms",
+  CHECKLISTS: "checklists",
+  RISK_ASSESSMENTS: "risk_assessments",
+  EQUIPMENT: "equipment",
+} as const;
+export type DocumentTypeIntegration =
+  (typeof DocumentTypeIntegration)[keyof typeof DocumentTypeIntegration];
+
+export interface WorkflowRef {
+  _id: string;
+  name: string;
+  description?: string;
+}
+
+export interface DocumentType {
+  _id: string;
+  client?: string | null;
+  name: string;
+  code: string;
+  description: string;
+  visibility: Role[] | string[];
+  rules: DocumentTypeRule[];
+  integrationSettings: DocumentTypeIntegration[];
+  reviewCycle: number;
+  workflow: WorkflowRef | string;
+  createdBy?: string;
+  updatedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateDocumentTypeDto {
+  client?: string;
+  name: string;
+  code: string;
+  description: string;
+  visibility: string[];
+  rules?: DocumentTypeRule[];
+  integrationSettings?: DocumentTypeIntegration[];
+  reviewCycle: number;
+  workflow: string;
+}
+
+export interface UpdateDocumentTypeDto {
+  name?: string;
+  code?: string;
+  description?: string;
+  visibility?: string[];
+  rules?: DocumentTypeRule[];
+  integrationSettings?: DocumentTypeIntegration[];
+  reviewCycle?: number;
+  workflow?: string;
+}
