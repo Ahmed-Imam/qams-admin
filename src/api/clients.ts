@@ -1,5 +1,5 @@
+import type { Client, ClientWithUsers, CreateClientDto, UpdateClientDto } from "../types";
 import axiosInstance from "./axiosInstance";
-import type { Client, CreateClientDto, UpdateClientDto } from "../types";
 
 interface ApiResponse<T> {
   statusCode: number;
@@ -20,6 +20,14 @@ export const clientsAPI = {
     return 'data' in response.data && 'statusCode' in response.data 
       ? response.data.data 
       : response.data as Client;
+  },
+
+  /** Get client by id with users list (for Manage Users modal) */
+  getByIdWithUsers: async (id: string): Promise<ClientWithUsers> => {
+    const response = await axiosInstance.get<ApiResponse<ClientWithUsers>>(`/clients/${id}`);
+    return 'data' in response.data && 'statusCode' in response.data 
+      ? response.data.data 
+      : response.data as ClientWithUsers;
   },
 
   create: async (data: CreateClientDto): Promise<Client> => {

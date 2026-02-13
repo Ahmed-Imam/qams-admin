@@ -1,19 +1,21 @@
-import React, { useEffect, useState } from "react";
 import {
   Building2,
+  Edit,
+  MapPin,
+  MoreVertical,
   Plus,
   Search,
-  MoreVertical,
-  Edit,
   Trash2,
+  UserMinus,
+  UserPlus,
   Users,
-  MapPin,
-  X,
+  X
 } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { clientsAPI } from "../api/clients";
-import type { Client, CreateClientDto, ClientType } from "../types";
-import clsx from "clsx";
+import { usersAPI } from "../api/users";
+import type { Client, ClientType, CreateClientDto, User } from "../types";
 
 const clientTypes: ClientType[] = ["hospital", "laboratory", "clinic", "pharmacy", "other"];
 
@@ -29,6 +31,16 @@ export const Clients: React.FC = () => {
     classification: "",
     address: "",
   });
+  const [showManageUsersModal, setShowManageUsersModal] = useState(false);
+  const [manageUsersClient, setManageUsersClient] = useState<Client | null>(null);
+  const [clientUsers, setClientUsers] = useState<User[]>([]);
+  const [loadingManageUsers, setLoadingManageUsers] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [userSearchResults, setUserSearchResults] = useState<User[]>([]);
+  const [userSearchLoading, setUserSearchLoading] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const userSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userAutocompleteRef = useRef<HTMLDivElement>(null);
 
   const fetchClients = async () => {
     try {
@@ -99,6 +111,110 @@ export const Clients: React.FC = () => {
     setFormData({ name: "", type: "hospital", classification: "", address: "" });
   };
 
+  const openManageUsers = (client: Client) => {
+    setManageUsersClient(client);
+    setShowManageUsersModal(true);
+    setClientUsers([]);
+    setUserSearchQuery("");
+    setUserSearchResults([]);
+  };
+
+  const closeManageUsersModal = () => {
+    setShowManageUsersModal(false);
+    setManageUsersClient(null);
+    setClientUsers([]);
+    setUserSearchQuery("");
+    setUserSearchResults([]);
+    setUserDropdownOpen(false);
+  };
+
+  const fetchClientUsers = useCallback(async () => {
+    if (!manageUsersClient) return;
+    setLoadingManageUsers(true);
+    try {
+      const clientWithUsers = await clientsAPI.getByIdWithUsers(manageUsersClient._id);
+      setClientUsers(clientWithUsers.users || []);
+    } catch (error) {
+      toast.error("Failed to load users");
+      closeManageUsersModal();
+    } finally {
+      setLoadingManageUsers(false);
+    }
+  }, [manageUsersClient]);
+
+  useEffect(() => {
+    if (showManageUsersModal && manageUsersClient) {
+      fetchClientUsers();
+    }
+  }, [showManageUsersModal, manageUsersClient, fetchClientUsers]);
+
+  const handleAddUserToClient = async (userId: string) => {
+    if (!manageUsersClient) return;
+    try {
+      await clientsAPI.addUser(manageUsersClient._id, userId);
+      toast.success("User added to client");
+      setUserSearchQuery("");
+      setUserSearchResults([]);
+      setUserDropdownOpen(false);
+      fetchClientUsers();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to add user");
+    }
+  };
+
+  const handleRemoveUserFromClient = async (userId: string) => {
+    if (!manageUsersClient) return;
+    if (!confirm("Remove this user from the client?")) return;
+    try {
+      await clientsAPI.removeUser(manageUsersClient._id, userId);
+      toast.success("User removed from client");
+      fetchClientUsers();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to remove user");
+    }
+  };
+
+  const userSearchResultsNotInClient = userSearchResults.filter(
+    (u) => !clientUsers.some((cu) => cu._id === u._id)
+  );
+
+  useEffect(() => {
+    if (!showManageUsersModal || !userSearchQuery.trim()) {
+      setUserSearchResults([]);
+      setUserSearchLoading(false);
+      return;
+    }
+    if (userSearchDebounceRef.current) {
+      clearTimeout(userSearchDebounceRef.current);
+    }
+    userSearchDebounceRef.current = setTimeout(() => {
+      setUserSearchLoading(true);
+      usersAPI
+        .getAll({ search: userSearchQuery.trim(), limit: 20 })
+        .then((res) => setUserSearchResults(res.data || []))
+        .catch(() => setUserSearchResults([]))
+        .finally(() => {
+          setUserSearchLoading(false);
+          userSearchDebounceRef.current = null;
+        });
+    }, 300);
+    return () => {
+      if (userSearchDebounceRef.current) {
+        clearTimeout(userSearchDebounceRef.current);
+      }
+    };
+  }, [showManageUsersModal, userSearchQuery]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userAutocompleteRef.current && !userAutocompleteRef.current.contains(e.target as Node)) {
+        setUserDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -151,10 +267,17 @@ export const Clients: React.FC = () => {
                 <button className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors">
                   <MoreVertical className="w-5 h-5" />
                 </button>
-                <div className="absolute right-0 top-full mt-2 w-40 bg-secondary-800 border border-secondary-700/50 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <div className="absolute right-0 top-full mt-2 w-44 bg-secondary-800 border border-secondary-700/50 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  <button
+                    onClick={() => openManageUsers(client)}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-secondary-300 hover:text-white hover:bg-secondary-700/50 transition-colors rounded-t-xl"
+                  >
+                    <Users className="w-4 h-4" />
+                    Manage Users
+                  </button>
                   <button
                     onClick={() => handleEdit(client)}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-secondary-300 hover:text-white hover:bg-secondary-700/50 transition-colors rounded-t-xl"
+                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-secondary-300 hover:text-white hover:bg-secondary-700/50 transition-colors"
                   >
                     <Edit className="w-4 h-4" />
                     Edit
@@ -284,6 +407,130 @@ export const Clients: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Manage Users Modal */}
+      {showManageUsersModal && manageUsersClient && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="glass-card w-full max-w-lg max-h-[90vh] flex flex-col animate-fadeIn p-4">
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary-400" />
+                Manage Users — {manageUsersClient.name}
+              </h2>
+              <button
+                onClick={closeManageUsersModal}
+                className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {loadingManageUsers ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <>
+                <div className="mb-4 flex-shrink-0" ref={userAutocompleteRef}>
+                  <label className="block text-sm font-medium text-secondary-300 mb-2">
+                    Add user to client
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={userSearchQuery}
+                      onChange={(e) => {
+                        setUserSearchQuery(e.target.value);
+                        setUserDropdownOpen(true);
+                      }}
+                      onFocus={() => setUserDropdownOpen(true)}
+                      placeholder="Search by name or email..."
+                      className="input-field pl-9 w-full"
+                      autoComplete="off"
+                    />
+                    {userDropdownOpen && (
+                      <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-secondary-800 border border-secondary-700/50 rounded-xl shadow-xl overflow-hidden max-h-56 overflow-y-auto">
+                        {userSearchLoading ? (
+                          <div className="flex items-center justify-center gap-2 py-4 text-secondary-400 text-sm">
+                            <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                            Searching...
+                          </div>
+                        ) : userSearchQuery.trim().length < 2 ? (
+                          <div className="py-4 px-4 text-secondary-400 text-sm text-center">
+                            Type at least 2 characters to search users
+                          </div>
+                        ) : userSearchResultsNotInClient.length === 0 ? (
+                          <div className="py-4 px-4 text-secondary-400 text-sm text-center">
+                            {userSearchResults.length === 0
+                              ? "No users found"
+                              : "All matching users are already in this client"}
+                          </div>
+                        ) : (
+                          userSearchResultsNotInClient.map((user) => (
+                            <button
+                              key={user._id}
+                              type="button"
+                              onClick={() => handleAddUserToClient(user._id)}
+                              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary-700/50 transition-colors border-b border-secondary-700/30 last:border-0"
+                            >
+                              <div className="p-1.5 rounded-lg bg-primary-500/20">
+                                <UserPlus className="w-4 h-4 text-primary-400" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-white font-medium truncate">
+                                  {user.firstName} {user.lastName}
+                                </p>
+                                <p className="text-sm text-secondary-400 truncate">
+                                  {user.email}
+                                </p>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border border-secondary-700/50 rounded-xl overflow-hidden flex-1 min-h-0">
+                  <div className="max-h-64 overflow-y-auto divide-y divide-secondary-700/50">
+                    {clientUsers.length === 0 ? (
+                      <div className="py-8 text-center text-secondary-400 text-sm">
+                        No users assigned to this client yet.
+                      </div>
+                    ) : (
+                      clientUsers.map((user) => (
+                        <div
+                          key={user._id}
+                          className="flex items-center justify-between px-4 py-3 hover:bg-secondary-700/30 transition-colors"
+                        >
+                          <div>
+                            <p className="text-white font-medium">
+                              {user.firstName} {user.lastName}
+                            </p>
+                            <p className="text-sm text-secondary-400">
+                              {user.email}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveUserFromClient(user._id)}
+                            className="p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                            title="Remove from client"
+                          >
+                            <UserMinus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

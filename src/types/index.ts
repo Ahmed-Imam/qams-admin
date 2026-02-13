@@ -47,6 +47,11 @@ export interface Client {
   updatedAt: string;
 }
 
+/** Client with users array (from GET /clients/:id) */
+export interface ClientWithUsers extends Client {
+  users?: User[];
+}
+
 export type ClientType =
   | "hospital"
   | "laboratory"
