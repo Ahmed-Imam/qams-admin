@@ -25,6 +25,7 @@ import type {
   UserStatus,
 } from "../types";
 import clsx from "clsx";
+import { ConfirmationModal } from "../components/ConfirmationModal";
 
 const userStatuses: UserStatus[] = [
   "active",
@@ -57,6 +58,13 @@ export const Users: React.FC = () => {
     status: "invited",
     isSuperAdmin: false,
   });
+
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -126,14 +134,20 @@ export const Users: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
+  const openDeleteConfirm = (id: string, name: string) => {
+    setUserToDelete({ id, name });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!userToDelete) return;
     try {
-      await usersAPI.delete(id);
+      await usersAPI.delete(userToDelete.id);
       toast.success("User deleted successfully");
       fetchData();
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Failed to delete user");
+      throw error; // Re-throw to keep modal open on error
     }
   };
 
@@ -317,7 +331,12 @@ export const Users: React.FC = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(user._id)}
+                        onClick={() =>
+                          openDeleteConfirm(
+                            user._id,
+                            `${user.firstName} ${user.lastName}`,
+                          )
+                        }
                         className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -728,6 +747,17 @@ export const Users: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete User"
+        message="Are you sure you want to delete this user? This action cannot be undone."
+        itemName={userToDelete?.name}
+        confirmText="Delete User"
+        variant="danger"
+      />
     </div>
   );
 };

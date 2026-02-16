@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { clientsAPI } from "../api/clients";
 import { usersAPI } from "../api/users";
 import type { Client, ClientType, CreateClientDto, User } from "../types";
+import { ConfirmationModal } from "../components/ConfirmationModal";
 
 const clientTypes: ClientType[] = [
   "hospital",
@@ -48,6 +49,12 @@ export const Clients: React.FC = () => {
   const [userSearchResults, setUserSearchResults] = useState<User[]>([]);
   const [userSearchLoading, setUserSearchLoading] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const userSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -110,14 +117,20 @@ export const Clients: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this client?")) return;
+  const openDeleteConfirm = (id: string, name: string) => {
+    setClientToDelete({ id, name });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!clientToDelete) return;
     try {
-      await clientsAPI.delete(id);
+      await clientsAPI.delete(clientToDelete.id);
       toast.success("Client deleted successfully");
       fetchClients();
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Failed to delete client");
+      throw error;
     }
   };
 
@@ -312,7 +325,7 @@ export const Clients: React.FC = () => {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(client._id)}
+                    onClick={() => openDeleteConfirm(client._id, client.name)}
                     className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors rounded-b-xl"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -595,6 +608,18 @@ export const Clients: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Client"
+        message="Are you sure you want to delete this client? This action cannot be undone."
+        itemName={clientToDelete?.name}
+        confirmText="Delete Client"
+        variant="danger"
+      />
     </div>
   );
 };

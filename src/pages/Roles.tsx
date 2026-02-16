@@ -5,6 +5,7 @@ import { rolesAPI } from "../api/roles";
 import { clientsAPI } from "../api/clients";
 import type { Role, CreateRoleDto, Client } from "../types";
 import clsx from "clsx";
+import { ConfirmationModal } from "../components/ConfirmationModal";
 
 const allPermissions = [
   "manage users",
@@ -44,6 +45,13 @@ export const Roles: React.FC = () => {
     description: "",
     client: "",
   });
+
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const fetchData = async () => {
     try {
@@ -96,14 +104,20 @@ export const Roles: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this role?")) return;
+  const openDeleteConfirm = (id: string, name: string) => {
+    setRoleToDelete({ id, name });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!roleToDelete) return;
     try {
-      await rolesAPI.delete(id);
+      await rolesAPI.delete(roleToDelete.id);
       toast.success("Role deleted successfully");
       fetchData();
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Failed to delete role");
+      throw error;
     }
   };
 
@@ -183,7 +197,7 @@ export const Roles: React.FC = () => {
                   <Edit className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => handleDelete(role._id)}
+                  onClick={() => openDeleteConfirm(role._id, role.name)}
                   className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -416,6 +430,18 @@ export const Roles: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Role"
+        message="Are you sure you want to delete this role? This action cannot be undone."
+        itemName={roleToDelete?.name}
+        confirmText="Delete Role"
+        variant="danger"
+      />
     </div>
   );
 };

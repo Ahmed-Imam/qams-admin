@@ -18,6 +18,7 @@ import type {
   FormType,
 } from "../api/forms";
 import { formsAPI } from "../api/forms";
+import { ConfirmationModal } from "../components/ConfirmationModal";
 
 const FIELD_TYPE_OPTIONS: { value: FormFieldType; label: string }[] = [
   { value: "text_input", label: "Text Input" },
@@ -49,7 +50,7 @@ const FormModal: React.FC<FormModalProps> = ({
   onSuccess,
 }) => {
   const [activeTab, setActiveTab] = useState<"info" | "fields" | "advanced">(
-    "info"
+    "info",
   );
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -121,8 +122,9 @@ const FormModal: React.FC<FormModalProps> = ({
           required: f.required ?? false,
           options: f.type === "dropdown" ? f.options || [] : undefined,
         })),
-        capaTriggers:
-          formData.capaTriggers?.length ? formData.capaTriggers : undefined,
+        capaTriggers: formData.capaTriggers?.length
+          ? formData.capaTriggers
+          : undefined,
       };
       if (mode === "edit" && form?._id) {
         await formsAPI.update(form._id, payload);
@@ -166,7 +168,11 @@ const FormModal: React.FC<FormModalProps> = ({
         const idx = prev.formFields.findIndex((f) => f._id === fieldId);
         if (idx === -1) return prev;
         const next = [...prev.formFields];
-        if (updates.type && next[idx].type !== updates.type && updates.type !== "dropdown") {
+        if (
+          updates.type &&
+          next[idx].type !== updates.type &&
+          updates.type !== "dropdown"
+        ) {
           const u = { ...next[idx], ...updates };
           delete (u as Partial<FormField>).options;
           next[idx] = u;
@@ -176,7 +182,7 @@ const FormModal: React.FC<FormModalProps> = ({
         return { ...prev, formFields: next };
       });
     },
-    []
+    [],
   );
 
   const removeField = useCallback((fieldId: string) => {
@@ -369,7 +375,9 @@ const FormModal: React.FC<FormModalProps> = ({
                               type="text"
                               value={field.label}
                               onChange={(e) =>
-                                updateField(field._id, { label: e.target.value })
+                                updateField(field._id, {
+                                  label: e.target.value,
+                                })
                               }
                               className="input-field text-sm"
                               placeholder="e.g. Full Name"
@@ -523,7 +531,7 @@ const FormModal: React.FC<FormModalProps> = ({
                         setFormData((prev) => ({
                           ...prev,
                           capaTriggers: prev.capaTriggers.filter(
-                            (_, i) => i !== index
+                            (_, i) => i !== index,
                           ),
                         }))
                       }
@@ -589,6 +597,13 @@ export const Forms: React.FC = () => {
   const [editingForm, setEditingForm] = useState<Form | null>(null);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
 
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [formToDelete, setFormToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
   const formType: FormType = activeTab === "incidents" ? "incident" : "normal";
   const list = activeTab === "forms" ? forms : incidents;
 
@@ -617,7 +632,7 @@ export const Forms: React.FC = () => {
   const filteredList = list.filter(
     (f) =>
       f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (f.description || "").toLowerCase().includes(searchQuery.toLowerCase())
+      (f.description || "").toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleAdd = () => {
@@ -632,10 +647,15 @@ export const Forms: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (form: Form) => {
-    if (!confirm(`Delete "${form.name}"?`)) return;
+  const openDeleteConfirm = (form: Form) => {
+    setFormToDelete({ id: form._id, name: form.name });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!formToDelete) return;
     try {
-      await formsAPI.delete(form._id);
+      await formsAPI.delete(formToDelete.id);
       toast.success("Form deleted");
       fetchAll();
     } catch (error: unknown) {
@@ -643,6 +663,7 @@ export const Forms: React.FC = () => {
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || "Failed to delete";
       toast.error(msg);
+      throw error;
     }
   };
 
@@ -668,7 +689,10 @@ export const Forms: React.FC = () => {
             Manage common forms and incident reports (not tied to any client)
           </p>
         </div>
-        <button onClick={handleAdd} className="btn-primary flex items-center gap-2">
+        <button
+          onClick={handleAdd}
+          className="btn-primary flex items-center gap-2"
+        >
           <Plus className="w-5 h-5" />
           Add {activeTab === "incidents" ? "Incident Report" : "Form"}
         </button>
@@ -735,14 +759,16 @@ export const Forms: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDelete(form)}
+                    onClick={() => openDeleteConfirm(form)}
                     className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">{form.name}</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                {form.name}
+              </h3>
               {form.description && (
                 <p className="text-sm text-secondary-400 line-clamp-2 mb-3">
                   {form.description}
@@ -756,7 +782,9 @@ export const Forms: React.FC = () => {
                   </span>
                 )}
                 {form.createdAt && (
-                  <p>Created: {new Date(form.createdAt).toLocaleDateString()}</p>
+                  <p>
+                    Created: {new Date(form.createdAt).toLocaleDateString()}
+                  </p>
                 )}
               </div>
             </div>
@@ -765,7 +793,8 @@ export const Forms: React.FC = () => {
             <div className="col-span-full text-center py-12">
               <FileText className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
               <p className="text-secondary-400">
-                No {activeTab === "incidents" ? "incident reports" : "forms"} found
+                No {activeTab === "incidents" ? "incident reports" : "forms"}{" "}
+                found
               </p>
             </div>
           )}
@@ -779,6 +808,18 @@ export const Forms: React.FC = () => {
         mode={modalMode}
         formType={formType}
         onSuccess={fetchAll}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Form"
+        message="Are you sure you want to delete this form? This action cannot be undone."
+        itemName={formToDelete?.name}
+        confirmText="Delete Form"
+        variant="danger"
       />
     </div>
   );
