@@ -9,15 +9,22 @@ import {
   UserMinus,
   UserPlus,
   Users,
-  X
+  X,
 } from "lucide-react";
+import { SlideInModal } from "../components/SlideInModal";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { clientsAPI } from "../api/clients";
 import { usersAPI } from "../api/users";
 import type { Client, ClientType, CreateClientDto, User } from "../types";
 
-const clientTypes: ClientType[] = ["hospital", "laboratory", "clinic", "pharmacy", "other"];
+const clientTypes: ClientType[] = [
+  "hospital",
+  "laboratory",
+  "clinic",
+  "pharmacy",
+  "other",
+];
 
 export const Clients: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
@@ -32,14 +39,18 @@ export const Clients: React.FC = () => {
     address: "",
   });
   const [showManageUsersModal, setShowManageUsersModal] = useState(false);
-  const [manageUsersClient, setManageUsersClient] = useState<Client | null>(null);
+  const [manageUsersClient, setManageUsersClient] = useState<Client | null>(
+    null,
+  );
   const [clientUsers, setClientUsers] = useState<User[]>([]);
   const [loadingManageUsers, setLoadingManageUsers] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [userSearchResults, setUserSearchResults] = useState<User[]>([]);
   const [userSearchLoading, setUserSearchLoading] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const userSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const userAutocompleteRef = useRef<HTMLDivElement>(null);
 
   const fetchClients = async () => {
@@ -61,7 +72,7 @@ export const Clients: React.FC = () => {
     (client) =>
       client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       client.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.classification.toLowerCase().includes(searchQuery.toLowerCase())
+      client.classification.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,7 +87,12 @@ export const Clients: React.FC = () => {
       }
       setShowModal(false);
       setEditingClient(null);
-      setFormData({ name: "", type: "hospital", classification: "", address: "" });
+      setFormData({
+        name: "",
+        type: "hospital",
+        classification: "",
+        address: "",
+      });
       fetchClients();
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Operation failed");
@@ -108,7 +124,12 @@ export const Clients: React.FC = () => {
   const closeModal = () => {
     setShowModal(false);
     setEditingClient(null);
-    setFormData({ name: "", type: "hospital", classification: "", address: "" });
+    setFormData({
+      name: "",
+      type: "hospital",
+      classification: "",
+      address: "",
+    });
   };
 
   const openManageUsers = (client: Client) => {
@@ -132,7 +153,9 @@ export const Clients: React.FC = () => {
     if (!manageUsersClient) return;
     setLoadingManageUsers(true);
     try {
-      const clientWithUsers = await clientsAPI.getByIdWithUsers(manageUsersClient._id);
+      const clientWithUsers = await clientsAPI.getByIdWithUsers(
+        manageUsersClient._id,
+      );
       setClientUsers(clientWithUsers.users || []);
     } catch (error) {
       toast.error("Failed to load users");
@@ -175,7 +198,7 @@ export const Clients: React.FC = () => {
   };
 
   const userSearchResultsNotInClient = userSearchResults.filter(
-    (u) => !clientUsers.some((cu) => cu._id === u._id)
+    (u) => !clientUsers.some((cu) => cu._id === u._id),
   );
 
   useEffect(() => {
@@ -207,7 +230,10 @@ export const Clients: React.FC = () => {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (userAutocompleteRef.current && !userAutocompleteRef.current.contains(e.target as Node)) {
+      if (
+        userAutocompleteRef.current &&
+        !userAutocompleteRef.current.contains(e.target as Node)
+      ) {
         setUserDropdownOpen(false);
       }
     };
@@ -224,14 +250,17 @@ export const Clients: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="relative space-y-6 animate-fadeIn min-h-[calc(100vh-5rem)]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Clients</h1>
           <p className="text-secondary-400">Manage organization clients</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
+        <button
+          onClick={() => setShowModal(true)}
+          className="btn-primary flex items-center gap-2"
+        >
           <Plus className="w-5 h-5" />
           Add Client
         </button>
@@ -293,8 +322,10 @@ export const Clients: React.FC = () => {
               </div>
             </div>
 
-            <h3 className="text-lg font-semibold text-white mb-2">{client.name}</h3>
-            
+            <h3 className="text-lg font-semibold text-white mb-2">
+              {client.name}
+            </h3>
+
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2 text-secondary-400">
                 <span className="badge-info capitalize">{client.type}</span>
@@ -315,7 +346,7 @@ export const Clients: React.FC = () => {
         ))}
 
         {filteredClients.length === 0 && (
-          <div className="col-span-full text-center py-12">
+          <div className="col-span-full text-center py-12 min-h-[70vh]">
             <Building2 className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
             <p className="text-secondary-400">No clients found</p>
           </div>
@@ -323,22 +354,46 @@ export const Clients: React.FC = () => {
       </div>
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="glass-card w-full max-w-md p-6 animate-fadeIn">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">
-                {editingClient ? "Edit Client" : "Add New Client"}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+      <SlideInModal
+        isOpen={showModal}
+        onClose={closeModal}
+        title={editingClient ? "Edit Client" : "Add New Client"}
+        icon={Building2}
+        iconColor="primary"
+        badges={
+          editingClient
+            ? [
+                { label: editingClient.type, variant: "default" },
+                { label: editingClient.classification, variant: "default" },
+              ]
+            : []
+        }
+        size="md"
+        footer={
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="btn-secondary flex-1"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="client-form"
+              className="btn-primary flex-1"
+            >
+              {editingClient ? "Update Client" : "Create Client"}
+            </button>
+          </div>
+        }
+      >
+        <form id="client-form" onSubmit={handleSubmit} className="space-y-6">
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Client Information
+            </h3>
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-secondary-300 mb-2">
                   Name
@@ -346,7 +401,9 @@ export const Clients: React.FC = () => {
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="input-field"
                   placeholder="Client name"
                   required
@@ -359,12 +416,21 @@ export const Clients: React.FC = () => {
                 </label>
                 <select
                   value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as ClientType })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      type: e.target.value as ClientType,
+                    })
+                  }
                   className="input-field"
                   required
                 >
                   {clientTypes.map((type) => (
-                    <option key={type} value={type} className="bg-secondary-800">
+                    <option
+                      key={type}
+                      value={type}
+                      className="bg-secondary-800"
+                    >
                       {type.charAt(0).toUpperCase() + type.slice(1)}
                     </option>
                   ))}
@@ -378,7 +444,9 @@ export const Clients: React.FC = () => {
                 <input
                   type="text"
                   value={formData.classification}
-                  onChange={(e) => setFormData({ ...formData, classification: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, classification: e.target.value })
+                  }
                   className="input-field"
                   placeholder="e.g., Private, Government"
                   required
@@ -391,25 +459,18 @@ export const Clients: React.FC = () => {
                 </label>
                 <textarea
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: e.target.value })
+                  }
                   className="input-field min-h-[80px] resize-none"
                   placeholder="Full address"
                   required
                 />
               </div>
-
-              <div className="flex gap-3 pt-4">
-                <button type="button" onClick={closeModal} className="btn-secondary flex-1">
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary flex-1">
-                  {editingClient ? "Update" : "Create"}
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
+        </form>
+      </SlideInModal>
 
       {/* Manage Users Modal */}
       {showManageUsersModal && manageUsersClient && (

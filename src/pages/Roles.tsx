@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Shield,
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  X,
-  Check,
-} from "lucide-react";
+import { Shield, Plus, Search, Edit, Trash2, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { rolesAPI } from "../api/roles";
 import { clientsAPI } from "../api/clients";
@@ -73,7 +65,7 @@ export const Roles: React.FC = () => {
   }, []);
 
   const filteredRoles = roles.filter((role) =>
-    role.name.toLowerCase().includes(searchQuery.toLowerCase())
+    role.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -139,14 +131,19 @@ export const Roles: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6 animate-fadeIn min-h-[calc(100vh-5rem)]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Roles</h1>
-          <p className="text-secondary-400">Manage user roles and permissions</p>
+          <p className="text-secondary-400">
+            Manage user roles and permissions
+          </p>
         </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
+        <button
+          onClick={() => setShowModal(true)}
+          className="btn-primary flex items-center gap-2"
+        >
           <Plus className="w-5 h-5" />
           Add Role
         </button>
@@ -194,9 +191,13 @@ export const Roles: React.FC = () => {
               </div>
             </div>
 
-            <h3 className="text-lg font-semibold text-white mb-2">{role.name}</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              {role.name}
+            </h3>
             {role.description && (
-              <p className="text-sm text-secondary-400 mb-4">{role.description}</p>
+              <p className="text-sm text-secondary-400 mb-4">
+                {role.description}
+              </p>
             )}
 
             <div className="space-y-2">
@@ -220,119 +221,198 @@ export const Roles: React.FC = () => {
         ))}
 
         {filteredRoles.length === 0 && (
-          <div className="col-span-full text-center py-12">
+          <div className="col-span-full text-center py-12 ">
             <Shield className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
             <p className="text-secondary-400">No roles found</p>
           </div>
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal - Slide-in Panel */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="glass-card w-full max-w-2xl p-6 animate-fadeIn max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">
-                {editingRole ? "Edit Role" : "Add New Role"}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <div className="fixed inset-0 z-50 overflow-hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={closeModal}
+          />
+
+          {/* Panel */}
+          <div className="absolute right-0 top-0 h-full w-full max-w-3xl bg-secondary-900 shadow-2xl flex flex-col animate-slide-in border-l border-secondary-700/50">
+            {/* Header */}
+            <div className="bg-secondary-800/50 border-b border-secondary-700/50 p-6 shrink-0">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div
+                    className={clsx(
+                      "p-3 rounded-2xl",
+                      editingRole
+                        ? "bg-amber-500/20 border border-amber-500/30"
+                        : "bg-amber-500/20 border border-amber-500/30",
+                    )}
+                  >
+                    <Shield className="w-6 h-6 text-amber-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white tracking-tight">
+                      {editingRole ? "Edit Role" : "Add New Role"}
+                    </h2>
+                    <div className="flex items-center gap-2 mt-1">
+                      {editingRole && (
+                        <>
+                          <span className="px-2 py-0.5 bg-secondary-700 text-secondary-300 text-[10px] font-bold rounded-md uppercase tracking-wider border border-secondary-600">
+                            {editingRole.name}
+                          </span>
+                          <span className="text-secondary-500">•</span>
+                        </>
+                      )}
+                      <span className="px-2 py-0.5 bg-primary-500/20 text-primary-400 text-[10px] font-bold rounded-md uppercase tracking-wider border border-primary-500/30">
+                        {formData.permissions.length} Permission
+                        {formData.permissions.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={closeModal}
+                  className="p-2.5 text-secondary-400 hover:text-white hover:bg-secondary-700/50 rounded-xl transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Role Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="input-field"
-                  placeholder="e.g., Quality Manager"
-                  required
-                />
-              </div>
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Basic Information */}
+                <div className="glass-card p-4">
+                  <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+                    Basic Information
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-300 mb-2">
+                        Role Name
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
+                        className="input-field"
+                        placeholder="e.g., Quality Manager"
+                        required
+                      />
+                    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="input-field min-h-[80px] resize-none"
-                  placeholder="Role description"
-                />
-              </div>
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-300 mb-2">
+                        Description
+                      </label>
+                      <textarea
+                        value={formData.description}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            description: e.target.value,
+                          })
+                        }
+                        className="input-field min-h-[80px] resize-none"
+                        placeholder="Role description"
+                      />
+                    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Client
-                </label>
-                <select
-                  value={formData.client}
-                  onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-                  className="input-field"
-                  required
-                >
-                  <option value="" className="bg-secondary-800">Select a client</option>
-                  {clients.map((client) => (
-                    <option key={client._id} value={client._id} className="bg-secondary-800">
-                      {client.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-300 mb-2">
+                        Client
+                      </label>
+                      <select
+                        value={formData.client}
+                        onChange={(e) =>
+                          setFormData({ ...formData, client: e.target.value })
+                        }
+                        className="input-field"
+                        required
+                      >
+                        <option value="" className="bg-secondary-800">
+                          Select a client
+                        </option>
+                        {clients.map((client) => (
+                          <option
+                            key={client._id}
+                            value={client._id}
+                            className="bg-secondary-800"
+                          >
+                            {client.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-3">
-                  Permissions
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 bg-secondary-800/50 rounded-xl">
-                  {allPermissions.map((permission) => (
-                    <button
-                      key={permission}
-                      type="button"
-                      onClick={() => togglePermission(permission)}
-                      className={clsx(
-                        "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-                        formData.permissions.includes(permission)
-                          ? "bg-primary-500/20 text-primary-400 border border-primary-500/30"
-                          : "bg-secondary-700/50 text-secondary-400 border border-secondary-600/30 hover:bg-secondary-700"
-                      )}
-                    >
-                      <div
+                {/* Permissions */}
+                <div className="glass-card p-4">
+                  <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+                    Permissions
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-96 overflow-y-auto p-2 bg-secondary-800/50 rounded-xl">
+                    {allPermissions.map((permission) => (
+                      <button
+                        key={permission}
+                        type="button"
+                        onClick={() => togglePermission(permission)}
                         className={clsx(
-                          "w-4 h-4 rounded border flex items-center justify-center transition-all",
+                          "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
                           formData.permissions.includes(permission)
-                            ? "bg-primary-500 border-primary-500"
-                            : "border-secondary-500"
+                            ? "bg-primary-500/20 text-primary-400 border border-primary-500/30"
+                            : "bg-secondary-700/50 text-secondary-400 border border-secondary-600/30 hover:bg-secondary-700",
                         )}
                       >
-                        {formData.permissions.includes(permission) && (
-                          <Check className="w-3 h-3 text-white" />
-                        )}
-                      </div>
-                      <span className="truncate capitalize">{permission}</span>
-                    </button>
-                  ))}
+                        <div
+                          className={clsx(
+                            "w-4 h-4 rounded border flex items-center justify-center transition-all",
+                            formData.permissions.includes(permission)
+                              ? "bg-primary-500 border-primary-500"
+                              : "border-secondary-500",
+                          )}
+                        >
+                          {formData.permissions.includes(permission) && (
+                            <Check className="w-3 h-3 text-white" />
+                          )}
+                        </div>
+                        <span className="truncate capitalize">
+                          {permission}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </form>
+            </div>
 
-              <div className="flex gap-3 pt-4">
-                <button type="button" onClick={closeModal} className="btn-secondary flex-1">
+            {/* Footer */}
+            <div className="bg-secondary-800/50 border-t border-secondary-700/50 p-6 shrink-0">
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="btn-secondary flex-1"
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary flex-1">
-                  {editingRole ? "Update" : "Create"}
+                <button
+                  type="submit"
+                  onClick={handleSubmit}
+                  className="btn-primary flex-1"
+                >
+                  {editingRole ? "Update Role" : "Create Role"}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}

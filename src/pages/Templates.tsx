@@ -10,6 +10,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { SlideInModal } from "../components/SlideInModal";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Accreditation } from "../api/accreditations";
@@ -223,7 +224,7 @@ export const Templates: React.FC = () => {
       setTotalTemplates(response.total || 0);
     } catch (error: any) {
       toast.error(
-        error?.response?.data?.message || "Failed to fetch templates"
+        error?.response?.data?.message || "Failed to fetch templates",
       );
     } finally {
       setLoading(false);
@@ -300,7 +301,7 @@ export const Templates: React.FC = () => {
       fetchData();
     } catch (error: any) {
       toast.error(
-        error?.response?.data?.message || "Failed to delete template"
+        error?.response?.data?.message || "Failed to delete template",
       );
     }
   };
@@ -330,7 +331,7 @@ export const Templates: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6 animate-fadeIn min-h-[calc(100vh-5rem)]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -384,7 +385,7 @@ export const Templates: React.FC = () => {
       </div>
 
       {/* Templates Table */}
-      <div className="glass-card overflow-hidden">
+      <div className="glass-card overflow-hidden min-h-[400px]">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -529,7 +530,7 @@ export const Templates: React.FC = () => {
                       "w-8 h-8 rounded-lg text-sm font-medium transition-colors",
                       page === p
                         ? "bg-primary-600 text-white"
-                        : "hover:bg-secondary-700 text-secondary-400 hover:text-white"
+                        : "hover:bg-secondary-700 text-secondary-400 hover:text-white",
                     )}
                   >
                     {p}
@@ -550,22 +551,46 @@ export const Templates: React.FC = () => {
       </div>
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="glass-card w-full max-w-3xl p-6 animate-fadeIn max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">
-                {editingTemplate ? "Edit Template" : "Add New Template"}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+      <SlideInModal
+        isOpen={showModal}
+        onClose={closeModal}
+        title={editingTemplate ? "Edit Template" : "Add New Template"}
+        icon={FileText}
+        iconColor="purple"
+        badges={
+          editingTemplate
+            ? [
+                { label: editingTemplate.templateType, variant: "default" },
+                { label: editingTemplate.type || "N/A", variant: "default" },
+              ]
+            : []
+        }
+        size="lg"
+        footer={
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="btn-secondary flex-1"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="template-form"
+              className="btn-primary flex-1"
+            >
+              {editingTemplate ? "Update Template" : "Create Template"}
+            </button>
+          </div>
+        }
+      >
+        <form id="template-form" onSubmit={handleSubmit} className="space-y-6">
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Template Information
+            </h3>
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-secondary-300 mb-2">
@@ -654,12 +679,20 @@ export const Templates: React.FC = () => {
                   </select>
                   {documentTypes.length === 0 && (
                     <p className="text-xs text-secondary-500 mt-1">
-                      No common document types. Add them in Document Types first.
+                      No common document types. Add them in Document Types
+                      first.
                     </p>
                   )}
                 </div>
               )}
+            </div>
+          </div>
 
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Related Information
+            </h3>
+            <div className="space-y-4">
               <AutocompleteInput
                 value={formData.accreditation}
                 onChange={(value) =>
@@ -676,7 +709,7 @@ export const Templates: React.FC = () => {
                   setFormData({ ...formData, facilityType: value })
                 }
                 options={autocompleteOptions.filter((opt) =>
-                  opt.startsWith("FT_")
+                  opt.startsWith("FT_"),
                 )}
                 placeholder="Search Option IDs..."
                 label="Facility Types (optional)"
@@ -691,39 +724,26 @@ export const Templates: React.FC = () => {
                 placeholder="Search Option IDs..."
                 label="Trigger IDs *"
               />
-
-              {formData.templateType === "document" && (
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Content
-                  </label>
-                  <textarea
-                    value={formData.content}
-                    onChange={(e) =>
-                      setFormData({ ...formData, content: e.target.value })
-                    }
-                    className="input-field min-h-[200px] resize-none font-mono text-sm"
-                    placeholder="Template content (e.g. HTML for document templates)"
-                  />
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="btn-secondary flex-1"
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary flex-1">
-                  {editingTemplate ? "Update" : "Create"}
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
+
+          {formData.templateType === "document" && (
+            <div className="glass-card p-4">
+              <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+                Content
+              </h3>
+              <textarea
+                value={formData.content}
+                onChange={(e) =>
+                  setFormData({ ...formData, content: e.target.value })
+                }
+                className="input-field min-h-[200px] resize-none font-mono text-sm"
+                placeholder="Template content (e.g. HTML for document templates)"
+              />
+            </div>
+          )}
+        </form>
+      </SlideInModal>
     </div>
   );
 };

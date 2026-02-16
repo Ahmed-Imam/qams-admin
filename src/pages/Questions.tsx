@@ -10,6 +10,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { SlideInModal } from "../components/SlideInModal";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { questionsAPI } from "../api/questions";
@@ -66,7 +67,7 @@ export const Questions: React.FC = () => {
       setTotalQuestions(response.total || 0);
     } catch (error: any) {
       toast.error(
-        error?.response?.data?.message || "Failed to fetch questions"
+        error?.response?.data?.message || "Failed to fetch questions",
       );
     } finally {
       setLoading(false);
@@ -97,7 +98,7 @@ export const Questions: React.FC = () => {
 
     // Validate options
     const validOptions = formData.options.filter(
-      (opt) => opt.id.trim() && opt.label.trim()
+      (opt) => opt.id.trim() && opt.label.trim(),
     );
     if (validOptions.length === 0) {
       toast.error("At least one option is required");
@@ -109,8 +110,8 @@ export const Questions: React.FC = () => {
       const facilityTypes = Array.isArray(formData.facilityType)
         ? formData.facilityType
         : formData.facilityType
-        ? [formData.facilityType]
-        : [];
+          ? [formData.facilityType]
+          : [];
       const normalizedFacilityType =
         facilityTypes.length > 0 ? facilityTypes : undefined;
 
@@ -139,8 +140,8 @@ export const Questions: React.FC = () => {
     const facilityTypes = Array.isArray(question.facilityType)
       ? question.facilityType
       : question.facilityType
-      ? [question.facilityType]
-      : [];
+        ? [question.facilityType]
+        : [];
     setFormData({
       questionId: question.questionId,
       questionTitle: question.questionTitle,
@@ -166,7 +167,7 @@ export const Questions: React.FC = () => {
       fetchData();
     } catch (error: any) {
       toast.error(
-        error?.response?.data?.message || "Failed to delete question"
+        error?.response?.data?.message || "Failed to delete question",
       );
     }
   };
@@ -193,9 +194,8 @@ export const Questions: React.FC = () => {
     const fetchFacilityTypeOptions = async () => {
       if (!showModal) return;
       try {
-        const facilityTypeQuestion = await questionsAPI.getByQuestionId(
-          "FACILITY_TYPE"
-        );
+        const facilityTypeQuestion =
+          await questionsAPI.getByQuestionId("FACILITY_TYPE");
         if (facilityTypeQuestion?.options) {
           const optionIds = facilityTypeQuestion.options.map((opt) => opt.id);
           setFacilityTypeSuggestions(optionIds);
@@ -243,7 +243,7 @@ export const Questions: React.FC = () => {
   const updateOption = (
     index: number,
     field: "id" | "label",
-    value: string
+    value: string,
   ) => {
     const newOptions = [...formData.options];
     newOptions[index] = { ...newOptions[index], [field]: value };
@@ -254,8 +254,8 @@ export const Questions: React.FC = () => {
     const currentTypes = Array.isArray(formData.facilityType)
       ? formData.facilityType
       : formData.facilityType
-      ? [formData.facilityType]
-      : [];
+        ? [formData.facilityType]
+        : [];
     if (!currentTypes.includes(facilityType) && facilityType.trim()) {
       setFormData({
         ...formData,
@@ -270,8 +270,8 @@ export const Questions: React.FC = () => {
     const currentTypes = Array.isArray(formData.facilityType)
       ? formData.facilityType
       : formData.facilityType
-      ? [formData.facilityType]
-      : [];
+        ? [formData.facilityType]
+        : [];
     setFormData({
       ...formData,
       facilityType: currentTypes.filter((ft) => ft !== facilityType),
@@ -285,9 +285,9 @@ export const Questions: React.FC = () => {
         Array.isArray(formData.facilityType)
           ? formData.facilityType
           : formData.facilityType
-          ? [formData.facilityType]
-          : []
-      ).includes(suggestion)
+            ? [formData.facilityType]
+            : []
+      ).includes(suggestion),
   );
 
   // Extract unique facility types from questions
@@ -300,8 +300,8 @@ export const Questions: React.FC = () => {
           }
           return q.facilityType ? [q.facilityType] : [];
         })
-        .filter((ft): ft is string => !!ft)
-    )
+        .filter((ft): ft is string => !!ft),
+    ),
   );
 
   if (loading && questions.length === 0) {
@@ -313,7 +313,7 @@ export const Questions: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6 animate-fadeIn min-h-[calc(100vh-5rem)]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -412,7 +412,7 @@ export const Questions: React.FC = () => {
       </div>
 
       {/* Questions Table */}
-      <div className="glass-card overflow-hidden">
+      <div className="glass-card overflow-hidden min-h-[400px]">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -463,7 +463,7 @@ export const Questions: React.FC = () => {
                         "px-2 py-1 rounded text-xs font-medium",
                         question.type === "single"
                           ? "bg-blue-500/20 text-blue-400"
-                          : "bg-purple-500/20 text-purple-400"
+                          : "bg-purple-500/20 text-purple-400",
                       )}
                     >
                       {question.type}
@@ -474,8 +474,8 @@ export const Questions: React.FC = () => {
                       const facilityTypes = Array.isArray(question.facilityType)
                         ? question.facilityType
                         : question.facilityType
-                        ? [question.facilityType]
-                        : [];
+                          ? [question.facilityType]
+                          : [];
                       return facilityTypes.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {facilityTypes.map((ft, idx) => (
@@ -506,7 +506,7 @@ export const Questions: React.FC = () => {
                   <td className="table-cell">
                     <span
                       className={clsx(
-                        question.isActive ? "badge-success" : "badge-warning"
+                        question.isActive ? "badge-success" : "badge-warning",
                       )}
                     >
                       {question.isActive ? "Active" : "Inactive"}
@@ -583,7 +583,7 @@ export const Questions: React.FC = () => {
                       "w-8 h-8 rounded-lg text-sm font-medium transition-colors",
                       page === p
                         ? "bg-primary-600 text-white"
-                        : "hover:bg-secondary-700 text-secondary-400 hover:text-white"
+                        : "hover:bg-secondary-700 text-secondary-400 hover:text-white",
                     )}
                   >
                     {p}
@@ -604,22 +604,49 @@ export const Questions: React.FC = () => {
       </div>
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="glass-card w-full max-w-2xl p-6 animate-fadeIn max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">
-                {editingQuestion ? "Edit Question" : "Add New Question"}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+      <SlideInModal
+        isOpen={showModal}
+        onClose={closeModal}
+        title={editingQuestion ? "Edit Question" : "Add New Question"}
+        icon={HelpCircle}
+        iconColor="blue"
+        badges={
+          editingQuestion
+            ? [
+                { label: editingQuestion.type, variant: "default" },
+                {
+                  label: `${editingQuestion.options.length} options`,
+                  variant: "default",
+                },
+              ]
+            : []
+        }
+        size="lg"
+        footer={
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="btn-secondary flex-1"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="question-form"
+              className="btn-primary flex-1"
+            >
+              {editingQuestion ? "Update Question" : "Create Question"}
+            </button>
+          </div>
+        }
+      >
+        <form id="question-form" onSubmit={handleSubmit} className="space-y-6">
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Question Information
+            </h3>
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-secondary-300 mb-2">
@@ -702,8 +729,8 @@ export const Questions: React.FC = () => {
                       const selectedTypes = Array.isArray(formData.facilityType)
                         ? formData.facilityType
                         : formData.facilityType
-                        ? [formData.facilityType]
-                        : [];
+                          ? [formData.facilityType]
+                          : [];
                       return selectedTypes.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {selectedTypes.map((ft) => (
@@ -806,91 +833,78 @@ export const Questions: React.FC = () => {
                   />
                 </div>
               </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-secondary-300">
-                    Options *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={addOption}
-                    className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
-                  >
-                    + Add Option
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {formData.options.map((option, index) => (
-                    <div key={index} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={option.id}
-                        onChange={(e) =>
-                          updateOption(index, "id", e.target.value)
-                        }
-                        className="input-field flex-1"
-                        placeholder="Option ID"
-                        required
-                      />
-                      <input
-                        type="text"
-                        value={option.label}
-                        onChange={(e) =>
-                          updateOption(index, "label", e.target.value)
-                        }
-                        className="input-field flex-1"
-                        placeholder="Option Label"
-                        required
-                      />
-                      {formData.options.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeOption(index)}
-                          className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  checked={formData.isActive}
-                  onChange={(e) =>
-                    setFormData({ ...formData, isActive: e.target.checked })
-                  }
-                  className="w-4 h-4 rounded border-secondary-600 bg-secondary-800 text-primary-500 focus:ring-primary-500"
-                />
-                <label
-                  htmlFor="isActive"
-                  className="text-sm font-medium text-secondary-300"
-                >
-                  Active
-                </label>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="btn-secondary flex-1"
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary flex-1">
-                  {editingQuestion ? "Update" : "Create"}
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
+
+          <div className="glass-card p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                Options
+              </h3>
+              <button
+                type="button"
+                onClick={addOption}
+                className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
+              >
+                + Add Option
+              </button>
+            </div>
+            <div className="space-y-2">
+              {formData.options.map((option, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={option.id}
+                    onChange={(e) => updateOption(index, "id", e.target.value)}
+                    className="input-field flex-1"
+                    placeholder="Option ID"
+                    required
+                  />
+                  <input
+                    type="text"
+                    value={option.label}
+                    onChange={(e) =>
+                      updateOption(index, "label", e.target.value)
+                    }
+                    className="input-field flex-1"
+                    placeholder="Option Label"
+                    required
+                  />
+                  {formData.options.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeOption(index)}
+                      className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="glass-card p-4">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={formData.isActive}
+                onChange={(e) =>
+                  setFormData({ ...formData, isActive: e.target.checked })
+                }
+                className="w-4 h-4 rounded border-secondary-600 bg-secondary-800 text-primary-500 focus:ring-primary-500"
+              />
+              <label
+                htmlFor="isActive"
+                className="text-sm font-medium text-secondary-300"
+              >
+                Active
+              </label>
+            </div>
+          </div>
+        </form>
+      </SlideInModal>
     </div>
   );
 };
