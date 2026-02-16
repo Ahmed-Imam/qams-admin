@@ -7,6 +7,7 @@ import { Clients } from "./pages/Clients";
 import { Dashboard } from "./pages/Dashboard";
 import { Departments } from "./pages/Departments";
 import { DocumentTypes } from "./pages/DocumentTypes";
+import { Forms } from "./pages/Forms";
 import { Login } from "./pages/Login";
 import { Questions } from "./pages/Questions";
 import { Roles } from "./pages/Roles";
@@ -76,6 +77,7 @@ const App: React.FC = () => {
           <Route path="questions" element={<Questions />} />
           <Route path="templates" element={<Templates />} />
           <Route path="document-types" element={<DocumentTypes />} />
+          <Route path="forms" element={<Forms />} />
           <Route path="activity-logs" element={<ActivityLogs />} />
           <Route path="settings" element={<Settings />} />
         </Route>
