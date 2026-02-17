@@ -217,6 +217,8 @@ export interface OnboardingTemplate {
   triggerIds: string[];
   relatedDocuments?: string[];
   content?: string;
+  /** Common form or incident report (when templateType is form_and_logs or incident_report) */
+  form?: string | { _id: string; name: string; formType?: string };
   createdAt?: string;
   updatedAt?: string;
 }
@@ -231,6 +233,8 @@ export interface CreateTemplateDto {
   triggerIds: string[];
   relatedDocuments?: string[];
   content?: string;
+  /** Common form or incident report ID (when templateType is form_and_logs or incident_report) */
+  form?: string;
 }
 
 export interface UpdateTemplateDto {
@@ -243,6 +247,7 @@ export interface UpdateTemplateDto {
   triggerIds?: string[];
   relatedDocuments?: string[];
   content?: string;
+  form?: string;
 }
 
 export interface GetTemplatesQuery {

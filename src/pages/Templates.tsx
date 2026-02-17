@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import type { Accreditation } from "../api/accreditations";
 import { accreditationsAPI } from "../api/accreditations";
 import { documentTypesAPI } from "../api/documentTypes";
+import { formsAPI, type Form } from "../api/forms";
 import { questionsAPI } from "../api/questions";
 import { templatesAPI } from "../api/templates";
 import type {
@@ -146,6 +147,9 @@ export const Templates: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingTemplate, setEditingTemplate] =
     useState<OnboardingTemplate | null>(null);
+  const [commonForms, setCommonForms] = useState<Form[]>([]);
+  const [commonIncidents, setCommonIncidents] = useState<Form[]>([]);
+  const [formsLoading, setFormsLoading] = useState(false);
   const [formData, setFormData] = useState<CreateTemplateDto>({
     id: "",
     name: "",
@@ -156,6 +160,7 @@ export const Templates: React.FC = () => {
     triggerIds: [],
     relatedDocuments: [],
     content: "",
+    form: undefined,
   });
 
   // Build autocomplete options from questions
@@ -207,6 +212,24 @@ export const Templates: React.FC = () => {
     }
   };
 
+  const fetchCommonFormsAndIncidents = async () => {
+    setFormsLoading(true);
+    try {
+      const [forms, incidents] = await Promise.all([
+        formsAPI.getCommon({ formType: "normal" }),
+        formsAPI.getCommon({ formType: "incident" }),
+      ]);
+      setCommonForms(Array.isArray(forms) ? forms : []);
+      setCommonIncidents(Array.isArray(incidents) ? incidents : []);
+    } catch (error) {
+      console.error("Failed to fetch forms:", error);
+      setCommonForms([]);
+      setCommonIncidents([]);
+    } finally {
+      setFormsLoading(false);
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -242,6 +265,12 @@ export const Templates: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (showModal) {
+      fetchCommonFormsAndIncidents();
+    }
+  }, [showModal]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       fetchData();
     }, 300);
@@ -258,6 +287,19 @@ export const Templates: React.FC = () => {
 
     if (formData.triggerIds.length === 0) {
       toast.error("At least one trigger ID is required");
+      return;
+    }
+
+    if (
+      (formData.templateType === "form_and_logs" ||
+        formData.templateType === "incident_report") &&
+      !formData.form
+    ) {
+      toast.error(
+        formData.templateType === "incident_report"
+          ? "Please select an incident report"
+          : "Please select a form"
+      );
       return;
     }
 
@@ -278,6 +320,12 @@ export const Templates: React.FC = () => {
 
   const handleEdit = (template: OnboardingTemplate) => {
     setEditingTemplate(template);
+    const formId: string | undefined =
+      typeof template.form === "object" && template.form?._id
+        ? template.form._id
+        : typeof template.form === "string"
+          ? template.form
+          : undefined;
     setFormData({
       id: template.id,
       name: template.name,
@@ -288,6 +336,7 @@ export const Templates: React.FC = () => {
       triggerIds: template.triggerIds || [],
       relatedDocuments: template.relatedDocuments || [],
       content: template.content || "",
+      form: formId,
     });
     setShowModal(true);
   };
@@ -318,6 +367,7 @@ export const Templates: React.FC = () => {
       triggerIds: [],
       relatedDocuments: [],
       content: "",
+      form: undefined,
     });
   };
 
@@ -588,12 +638,21 @@ export const Templates: React.FC = () => {
                   </label>
                   <select
                     value={formData.templateType}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const nextType = e.target.value as CreateTemplateDto["templateType"];
+                      const defaultType =
+                        nextType === "form_and_logs"
+                          ? "Form"
+                          : nextType === "incident_report"
+                            ? "Incident"
+                            : formData.type;
                       setFormData({
                         ...formData,
-                        templateType: e.target.value as any,
-                      })
-                    }
+                        templateType: nextType,
+                        type: defaultType,
+                        form: undefined,
+                      });
+                    }}
                     className="input-field"
                     required
                   >
@@ -655,6 +714,84 @@ export const Templates: React.FC = () => {
                   {documentTypes.length === 0 && (
                     <p className="text-xs text-secondary-500 mt-1">
                       No common document types. Add them in Document Types first.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {formData.templateType === "form_and_logs" && (
+                <div>
+                  <label className="block text-sm font-medium text-secondary-300 mb-2">
+                    Form *
+                  </label>
+                  <select
+                    value={formData.form ?? ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        form: e.target.value || undefined,
+                      })
+                    }
+                    className="input-field"
+                    required
+                  >
+                    <option value="" className="bg-secondary-800">
+                      {formsLoading
+                        ? "Loading forms..."
+                        : "Select a common form"}
+                    </option>
+                    {commonForms.map((f) => (
+                      <option
+                        key={f._id}
+                        value={f._id}
+                        className="bg-secondary-800"
+                      >
+                        {f.name}
+                      </option>
+                    ))}
+                  </select>
+                  {!formsLoading && commonForms.length === 0 && (
+                    <p className="text-xs text-secondary-500 mt-1">
+                      No common forms. Add them in Forms first.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {formData.templateType === "incident_report" && (
+                <div>
+                  <label className="block text-sm font-medium text-secondary-300 mb-2">
+                    Incident Report *
+                  </label>
+                  <select
+                    value={formData.form ?? ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        form: e.target.value || undefined,
+                      })
+                    }
+                    className="input-field"
+                    required
+                  >
+                    <option value="" className="bg-secondary-800">
+                      {formsLoading
+                        ? "Loading incident reports..."
+                        : "Select a common incident report"}
+                    </option>
+                    {commonIncidents.map((f) => (
+                      <option
+                        key={f._id}
+                        value={f._id}
+                        className="bg-secondary-800"
+                      >
+                        {f.name}
+                      </option>
+                    ))}
+                  </select>
+                  {!formsLoading && commonIncidents.length === 0 && (
+                    <p className="text-xs text-secondary-500 mt-1">
+                      No common incident reports. Add them in Forms first.
                     </p>
                   )}
                 </div>
