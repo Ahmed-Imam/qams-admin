@@ -204,7 +204,8 @@ export type TemplateType =
   | "document"
   | "form_and_logs"
   | "incident_report"
-  | "capa";
+  | "capa"
+  | "checklist";
 
 export interface OnboardingTemplate {
   _id: string;
@@ -217,6 +218,10 @@ export interface OnboardingTemplate {
   triggerIds: string[];
   relatedDocuments?: string[];
   content?: string;
+  /** Common form or incident report (when templateType is form_and_logs or incident_report) */
+  form?: string | { _id: string; name: string; formType?: string };
+  /** Common checklist (when templateType is checklist) */
+  checklist?: string | { _id: string; name: string; code?: string };
   createdAt?: string;
   updatedAt?: string;
 }
@@ -231,6 +236,10 @@ export interface CreateTemplateDto {
   triggerIds: string[];
   relatedDocuments?: string[];
   content?: string;
+  /** Common form or incident report ID (when templateType is form_and_logs or incident_report) */
+  form?: string;
+  /** Common checklist ID (when templateType is checklist) */
+  checklist?: string;
 }
 
 export interface UpdateTemplateDto {
@@ -243,6 +252,8 @@ export interface UpdateTemplateDto {
   triggerIds?: string[];
   relatedDocuments?: string[];
   content?: string;
+  form?: string;
+  checklist?: string;
 }
 
 export interface GetTemplatesQuery {

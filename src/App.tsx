@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import { MainLayout } from "./components/layouts/MainLayout";
 import { ActivityLogs } from "./pages/ActivityLogs";
+import { Checklists } from "./pages/Checklists";
 import { Clients } from "./pages/Clients";
 import { Dashboard } from "./pages/Dashboard";
 import { Departments } from "./pages/Departments";
@@ -78,6 +79,7 @@ const App: React.FC = () => {
           <Route path="templates" element={<Templates />} />
           <Route path="document-types" element={<DocumentTypes />} />
           <Route path="forms" element={<Forms />} />
+          <Route path="checklists" element={<Checklists />} />
           <Route path="activity-logs" element={<ActivityLogs />} />
           <Route path="settings" element={<Settings />} />
         </Route>

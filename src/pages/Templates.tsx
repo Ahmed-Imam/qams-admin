@@ -15,7 +15,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Accreditation } from "../api/accreditations";
 import { accreditationsAPI } from "../api/accreditations";
+import { checklistV2API, type CommonChecklist } from "../api/checklistV2";
 import { documentTypesAPI } from "../api/documentTypes";
+import { formsAPI, type Form } from "../api/forms";
 import { questionsAPI } from "../api/questions";
 import { templatesAPI } from "../api/templates";
 import type {
@@ -129,6 +131,7 @@ const templateTypes: Array<{ value: string; label: string }> = [
   { value: "form_and_logs", label: "Form and Logs" },
   { value: "incident_report", label: "Incident Report" },
   { value: "capa", label: "CAPA" },
+  { value: "checklist", label: "Checklist" },
 ];
 
 export const Templates: React.FC = () => {
@@ -147,6 +150,12 @@ export const Templates: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingTemplate, setEditingTemplate] =
     useState<OnboardingTemplate | null>(null);
+  const [commonForms, setCommonForms] = useState<Form[]>([]);
+  const [commonIncidents, setCommonIncidents] = useState<Form[]>([]);
+  const [commonChecklists, setCommonChecklists] = useState<CommonChecklist[]>(
+    [],
+  );
+  const [formsLoading, setFormsLoading] = useState(false);
   const [formData, setFormData] = useState<CreateTemplateDto>({
     id: "",
     name: "",
@@ -157,6 +166,8 @@ export const Templates: React.FC = () => {
     triggerIds: [],
     relatedDocuments: [],
     content: "",
+    form: undefined,
+    checklist: undefined,
   });
 
   // Build autocomplete options from questions
@@ -208,6 +219,29 @@ export const Templates: React.FC = () => {
     }
   };
 
+  const fetchCommonFormsAndIncidents = async () => {
+    setFormsLoading(true);
+    try {
+      const [forms, incidents, checklistsRes] = await Promise.all([
+        formsAPI.getCommon({ formType: "normal" }),
+        formsAPI.getCommon({ formType: "incident" }),
+        checklistV2API.getCommon({ pageSize: 500 }),
+      ]);
+      setCommonForms(Array.isArray(forms) ? forms : []);
+      setCommonIncidents(Array.isArray(incidents) ? incidents : []);
+      setCommonChecklists(
+        Array.isArray(checklistsRes?.items) ? checklistsRes.items : [],
+      );
+    } catch (error) {
+      console.error("Failed to fetch forms/checklists:", error);
+      setCommonForms([]);
+      setCommonIncidents([]);
+      setCommonChecklists([]);
+    } finally {
+      setFormsLoading(false);
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -243,6 +277,12 @@ export const Templates: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (showModal) {
+      fetchCommonFormsAndIncidents();
+    }
+  }, [showModal]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       fetchData();
     }, 300);
@@ -259,6 +299,24 @@ export const Templates: React.FC = () => {
 
     if (formData.triggerIds.length === 0) {
       toast.error("At least one trigger ID is required");
+      return;
+    }
+
+    if (
+      (formData.templateType === "form_and_logs" ||
+        formData.templateType === "incident_report") &&
+      !formData.form
+    ) {
+      toast.error(
+        formData.templateType === "incident_report"
+          ? "Please select an incident report"
+          : "Please select a form",
+      );
+      return;
+    }
+
+    if (formData.templateType === "checklist" && !formData.checklist) {
+      toast.error("Please select a checklist");
       return;
     }
 
@@ -279,6 +337,18 @@ export const Templates: React.FC = () => {
 
   const handleEdit = (template: OnboardingTemplate) => {
     setEditingTemplate(template);
+    const formId: string | undefined =
+      typeof template.form === "object" && template.form?._id
+        ? template.form._id
+        : typeof template.form === "string"
+          ? template.form
+          : undefined;
+    const checklistId: string | undefined =
+      typeof template.checklist === "object" && template.checklist?._id
+        ? (template.checklist as { _id: string })._id
+        : typeof template.checklist === "string"
+          ? template.checklist
+          : undefined;
     setFormData({
       id: template.id,
       name: template.name,
@@ -289,6 +359,8 @@ export const Templates: React.FC = () => {
       triggerIds: template.triggerIds || [],
       relatedDocuments: template.relatedDocuments || [],
       content: template.content || "",
+      form: formId,
+      checklist: checklistId,
     });
     setShowModal(true);
   };
@@ -319,6 +391,8 @@ export const Templates: React.FC = () => {
       triggerIds: [],
       relatedDocuments: [],
       content: "",
+      form: undefined,
+      checklist: undefined,
     });
   };
 
@@ -613,12 +687,25 @@ export const Templates: React.FC = () => {
                   </label>
                   <select
                     value={formData.templateType}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const nextType = e.target
+                        .value as CreateTemplateDto["templateType"];
+                      const defaultType =
+                        nextType === "form_and_logs"
+                          ? "Form"
+                          : nextType === "incident_report"
+                            ? "Incident"
+                            : nextType === "checklist"
+                              ? "Checklist"
+                              : formData.type;
                       setFormData({
                         ...formData,
-                        templateType: e.target.value as any,
-                      })
-                    }
+                        templateType: nextType,
+                        type: defaultType,
+                        form: undefined,
+                        checklist: undefined,
+                      });
+                    }}
                     className="input-field"
                     required
                   >
@@ -693,6 +780,124 @@ export const Templates: React.FC = () => {
               Related Information
             </h3>
             <div className="space-y-4">
+              {formData.templateType === "form_and_logs" && (
+                <div>
+                  <label className="block text-sm font-medium text-secondary-300 mb-2">
+                    Form *
+                  </label>
+                  <select
+                    value={formData.form ?? ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        form: e.target.value || undefined,
+                      })
+                    }
+                    className="input-field"
+                    required
+                  >
+                    <option value="" className="bg-secondary-800">
+                      {formsLoading
+                        ? "Loading forms..."
+                        : "Select a common form"}
+                    </option>
+                    {commonForms.map((f) => (
+                      <option
+                        key={f._id}
+                        value={f._id}
+                        className="bg-secondary-800"
+                      >
+                        {f.name}
+                      </option>
+                    ))}
+                  </select>
+                  {!formsLoading && commonForms.length === 0 && (
+                    <p className="text-xs text-secondary-500 mt-1">
+                      No common forms. Add them in Forms first.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {formData.templateType === "incident_report" && (
+                <div>
+                  <label className="block text-sm font-medium text-secondary-300 mb-2">
+                    Incident Report *
+                  </label>
+                  <select
+                    value={formData.form ?? ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        form: e.target.value || undefined,
+                      })
+                    }
+                    className="input-field"
+                    required
+                  >
+                    <option value="" className="bg-secondary-800">
+                      {formsLoading
+                        ? "Loading incident reports..."
+                        : "Select a common incident report"}
+                    </option>
+                    {commonIncidents.map((f) => (
+                      <option
+                        key={f._id}
+                        value={f._id}
+                        className="bg-secondary-800"
+                      >
+                        {f.name}
+                      </option>
+                    ))}
+                  </select>
+                  {!formsLoading && commonIncidents.length === 0 && (
+                    <p className="text-xs text-secondary-500 mt-1">
+                      No common incident reports. Add them in Forms first.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {formData.templateType === "checklist" && (
+                <div>
+                  <label className="block text-sm font-medium text-secondary-300 mb-2">
+                    Checklist *
+                  </label>
+                  <select
+                    value={formData.checklist ?? ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        checklist: e.target.value || undefined,
+                      })
+                    }
+                    className="input-field"
+                    required
+                  >
+                    <option value="" className="bg-secondary-800">
+                      {formsLoading
+                        ? "Loading checklists..."
+                        : "Select a common checklist"}
+                    </option>
+                    {commonChecklists.map((c) => (
+                      <option
+                        key={c._id}
+                        value={c._id}
+                        className="bg-secondary-800"
+                      >
+                        {c.name}
+                        {c.code ? ` (${c.code})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {!formsLoading && commonChecklists.length === 0 && (
+                    <p className="text-xs text-secondary-500 mt-1">
+                      No common checklists. Add them in Common Checklists first.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <AutocompleteInput
                 value={formData.accreditation}
                 onChange={(value) =>

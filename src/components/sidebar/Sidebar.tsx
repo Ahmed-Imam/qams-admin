@@ -10,6 +10,7 @@ import {
   HelpCircle,
   History,
   LayoutDashboard,
+  ListChecks,
   LogOut,
   Settings,
   Shield,
@@ -63,6 +64,11 @@ const navItems: NavItem[] = [
     path: "/forms",
     label: "Forms",
     icon: <ClipboardList className="w-5 h-5" />,
+  },
+  {
+    path: "/checklists",
+    label: "Checklists",
+    icon: <ListChecks className="w-5 h-5" />,
   },
   {
     path: "/activity-logs",
