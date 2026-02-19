@@ -14,6 +14,7 @@ interface GetDepartmentsParams {
   page?: number;
   limit?: number;
   clientId?: string;
+  search?: string;
 }
 
 const unwrapResponse = <T>(response: { data: ApiResponse<T> | T }): T => {
