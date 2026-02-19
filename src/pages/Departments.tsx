@@ -25,7 +25,7 @@ export const Departments: React.FC = () => {
         departmentsAPI.getAll({ limit: 100 }),
         clientsAPI.getAll(),
       ]);
-      setDepartments(deptsRes?.data || []);
+      setDepartments(Array.isArray(deptsRes) ? deptsRes : deptsRes?.data || []);
       setClients(clientsRes || []);
     } catch (error) {
       toast.error("Failed to fetch data");

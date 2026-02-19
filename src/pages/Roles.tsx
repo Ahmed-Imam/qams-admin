@@ -36,7 +36,10 @@ export const Roles: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadMoreLoading, setLoadMoreLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [formData, setFormData] = useState<CreateRoleDto>({
@@ -53,28 +56,64 @@ export const Roles: React.FC = () => {
     name: string;
   } | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = async (
+    pageNumber: number = 1,
+    search: string = searchQuery,
+  ) => {
     try {
+      if (pageNumber === 1) {
+        setLoading(true);
+      } else {
+        setLoadMoreLoading(true);
+      }
+
       const [rolesRes, clientsRes] = await Promise.all([
-        rolesAPI.getAll({ limit: 100 }),
-        clientsAPI.getAll(),
+        rolesAPI.getAll({
+          page: pageNumber,
+          limit: 9,
+          search: search || undefined,
+        }),
+        // Only fetch clients on initial load or if not already fetched
+        clients.length === 0 ? clientsAPI.getAll() : Promise.resolve(clients),
       ]);
-      setRoles(rolesRes?.data || []);
+
+      const newRoles = Array.isArray(rolesRes)
+        ? rolesRes
+        : rolesRes?.data || [];
+      const totalPages = Array.isArray(rolesRes)
+        ? 1
+        : rolesRes?.totalPages || 1;
+
+      if (pageNumber === 1) {
+        setRoles(newRoles);
+        setPage(1); // Reset page state to 1
+      } else {
+        setRoles((prev) => [...prev, ...newRoles]);
+        setPage(pageNumber); // Update page state to current page
+      }
+
+      setHasMore(pageNumber < totalPages);
       setClients(clientsRes || []);
     } catch (error) {
       toast.error("Failed to fetch data");
     } finally {
       setLoading(false);
+      setLoadMoreLoading(false);
     }
   };
 
+  // Debounce search - this also handles the initial load
   useEffect(() => {
-    fetchData();
-  }, []);
+    const timer = setTimeout(() => {
+      fetchData(1, searchQuery);
+    }, 500);
 
-  const filteredRoles = roles.filter((role) =>
-    role.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleLoadMore = () => {
+    fetchData(page + 1);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,7 +218,7 @@ export const Roles: React.FC = () => {
 
       {/* Roles Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredRoles.map((role, index) => (
+        {roles.map((role, index) => (
           <div
             key={role._id}
             className="glass-card p-6 hover:border-primary-500/30 transition-all duration-300 animate-fadeIn"
@@ -234,13 +273,34 @@ export const Roles: React.FC = () => {
           </div>
         ))}
 
-        {filteredRoles.length === 0 && (
+        {roles.length === 0 && (
           <div className="col-span-full text-center py-12 ">
             <Shield className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
             <p className="text-secondary-400">No roles found</p>
           </div>
         )}
       </div>
+
+      {/* Load More */}
+      {hasMore && (
+        <div className="flex justify-center mt-8 pb-12">
+          <button
+            onClick={handleLoadMore}
+            disabled={loadMoreLoading}
+            className="group relative px-8 py-3 bg-secondary-800 hover:bg-secondary-700 disabled:opacity-50 text-white font-semibold rounded-xl transition-all duration-300 border border-secondary-700 hover:border-primary-500/50 shadow-lg hover:shadow-primary-500/10 overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-3">
+              {loadMoreLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Shield className="w-5 h-5 text-primary-400 group-hover:scale-110 transition-transform" />
+              )}
+              <span>{loadMoreLoading ? "Loading..." : "Load More Roles"}</span>
+            </div>
+          </button>
+        </div>
+      )}
 
       {/* Modal - Slide-in Panel */}
       {showModal && (
