@@ -26,6 +26,7 @@ import type {
 } from "../types";
 import clsx from "clsx";
 import { ConfirmationModal } from "../components/ConfirmationModal";
+import { SlideInModal } from "../components/SlideInModal";
 
 const userStatuses: UserStatus[] = [
   "active",
@@ -53,8 +54,8 @@ export const Users: React.FC = () => {
     lastName: "",
     email: "",
     password: "",
-    role: "",
-    department: "",
+    roleId: "",
+    departmentId: "",
     status: "invited",
     isSuperAdmin: false,
   });
@@ -82,8 +83,8 @@ export const Users: React.FC = () => {
       setUsers(usersRes.data || []);
       setTotalPages(usersRes.totalPages || 1);
       setTotalUsers(usersRes.total || 0);
-      setRoles(rolesRes?.data || []);
-      setDepartments(deptsRes?.data || []);
+      setRoles(Array.isArray(rolesRes) ? rolesRes : rolesRes?.data || []);
+      setDepartments(Array.isArray(deptsRes) ? deptsRes : deptsRes?.data || []);
     } catch (error) {
       toast.error("Failed to fetch data");
     } finally {
@@ -123,8 +124,8 @@ export const Users: React.FC = () => {
       lastName: user.lastName,
       email: user.email,
       password: "",
-      role: typeof user.role === "object" ? user.role._id : user.role,
-      department:
+      roleId: typeof user.role === "object" ? user.role._id : user.role,
+      departmentId:
         typeof user.department === "object"
           ? user.department._id
           : user.department,
@@ -159,8 +160,8 @@ export const Users: React.FC = () => {
       lastName: "",
       email: "",
       password: "",
-      role: "",
-      department: "",
+      roleId: "",
+      departmentId: "",
       status: "invited",
       isSuperAdmin: false,
     });
@@ -176,10 +177,47 @@ export const Users: React.FC = () => {
     return styles[status] || "badge-info";
   };
 
-  if (loading) {
+  if (loading && users.length === 0) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-6 animate-fadeIn">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="h-8 w-32 bg-secondary-800 rounded animate-pulse mb-2"></div>
+            <div className="h-4 w-64 bg-secondary-800 rounded animate-pulse"></div>
+          </div>
+          <div className="h-10 w-32 bg-secondary-800 rounded animate-pulse"></div>
+        </div>
+        <div className="glass-card p-4 flex flex-col sm:flex-row gap-4">
+          <div className="h-10 flex-1 bg-secondary-800 rounded animate-pulse"></div>
+          <div className="h-10 w-40 bg-secondary-800 rounded animate-pulse"></div>
+        </div>
+        <div className="glass-card overflow-hidden">
+          <div className="p-4 border-b border-secondary-700/50 flex gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="h-6 flex-1 bg-secondary-800 rounded animate-pulse"
+              ></div>
+            ))}
+          </div>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="p-4 border-b border-secondary-700/30 flex gap-4"
+            >
+              <div className="flex items-center gap-3 flex-1">
+                <div className="w-10 h-10 rounded-full bg-secondary-800 animate-pulse"></div>
+                <div className="h-5 w-24 bg-secondary-800 rounded animate-pulse"></div>
+              </div>
+              {[1, 2, 3, 4, 5].map((j) => (
+                <div
+                  key={j}
+                  className="h-5 flex-1 bg-secondary-800 rounded animate-pulse mt-2"
+                ></div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -212,8 +250,16 @@ export const Users: React.FC = () => {
             placeholder="Search users..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10"
+            className="input-field pl-10 pr-10"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-secondary-500 hover:text-white hover:bg-secondary-700 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
         <div className="relative">
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
@@ -239,11 +285,16 @@ export const Users: React.FC = () => {
       </div>
 
       {/* Users Table */}
-      <div className="glass-card overflow-hidden min-h-[400px]">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-secondary-700/50">
+      <div className="glass-card flex flex-col h-[calc(100vh-18rem)]">
+        {loading && users.length > 0 && (
+          <div className="absolute top-0 left-0 w-full h-1 bg-secondary-800 overflow-hidden z-20 rounded-t-xl">
+            <div className="h-full bg-primary-500 w-1/3 animate-[slide_1.5s_ease-in-out_infinite]"></div>
+          </div>
+        )}
+        <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar">
+          <table className="w-full relative">
+            <thead className="sticky top-0 z-10 bg-secondary-900/95 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
+              <tr>
                 <th className="table-header">User</th>
                 <th className="table-header">Email</th>
                 <th className="table-header">Type</th>
@@ -349,7 +400,7 @@ export const Users: React.FC = () => {
           </table>
 
           {users.length === 0 && !loading && (
-            <div className="text-center py-12 min-h-[70vh]">
+            <div className="text-center py-12 ">
               <UsersIcon className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
               <p className="text-secondary-400">No users found</p>
             </div>
@@ -357,7 +408,7 @@ export const Users: React.FC = () => {
         </div>
 
         {/* Pagination Controls */}
-        <div className="p-4 border-t border-secondary-700/30 flex items-center justify-between">
+        <div className="p-4 border-t border-secondary-700/30 flex items-center justify-between shrink-0 bg-secondary-900/50">
           <p className="text-sm text-secondary-400">
             Showing{" "}
             <span className="font-medium text-white">
@@ -419,334 +470,269 @@ export const Users: React.FC = () => {
       </div>
 
       {/* Modal - Slide-in Panel */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={closeModal}
-          />
-
-          {/* Panel */}
-          <div className="absolute right-0 top-0 h-full w-full max-w-3xl bg-secondary-900 shadow-2xl flex flex-col animate-slide-in border-l border-secondary-700/50">
-            {/* Header */}
-            <div className="bg-secondary-800/50 border-b border-secondary-700/50 p-6 shrink-0">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <div
-                    className={clsx(
-                      "p-3 rounded-2xl",
-                      editingUser
-                        ? "bg-amber-500/20 border border-amber-500/30"
-                        : "bg-primary-500/20 border border-primary-500/30",
-                    )}
-                  >
-                    <UsersIcon
-                      className={clsx(
-                        "w-6 h-6",
-                        editingUser ? "text-amber-400" : "text-primary-400",
-                      )}
-                    />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-white tracking-tight">
-                      {editingUser ? "Edit User" : "Add New User"}
-                    </h2>
-                    <div className="flex items-center gap-2 mt-1">
-                      {editingUser && (
-                        <>
-                          <span className="px-2 py-0.5 bg-secondary-700 text-secondary-300 text-[10px] font-bold rounded-md uppercase tracking-wider border border-secondary-600">
-                            {editingUser.email}
-                          </span>
-                          <span className="text-secondary-500">•</span>
-                        </>
-                      )}
-                      <span
-                        className={clsx(
-                          "px-2 py-0.5 text-[10px] font-bold rounded-md uppercase tracking-wider border",
-                          formData.status === "active" &&
-                            "bg-green-500/20 text-green-400 border-green-500/30",
-                          formData.status === "invited" &&
-                            "bg-blue-500/20 text-blue-400 border-blue-500/30",
-                          formData.status === "inactive" &&
-                            "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-                          formData.status === "suspended" &&
-                            "bg-red-500/20 text-red-400 border-red-500/30",
-                        )}
-                      >
-                        {formData.status}
-                      </span>
-                      {formData.isSuperAdmin && (
-                        <>
-                          <span className="text-secondary-500">•</span>
-                          <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] font-bold rounded-md uppercase tracking-wider border border-amber-500/30 flex items-center gap-1">
-                            <Shield className="w-3 h-3" />
-                            Super Admin
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={closeModal}
-                  className="p-2.5 text-secondary-400 hover:text-white hover:bg-secondary-700/50 rounded-xl transition-all"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+      <SlideInModal
+        isOpen={showModal}
+        onClose={closeModal}
+        title={editingUser ? "Edit User" : "Add New User"}
+        icon={UsersIcon}
+        iconColor={editingUser ? "amber" : "primary"}
+        badges={[
+          ...(editingUser
+            ? [
+                {
+                  label: editingUser.email || "No Email",
+                  variant: "default" as const,
+                },
+              ]
+            : []),
+          { label: formData.status || "invited", variant: "default" as const },
+          ...(formData.isSuperAdmin
+            ? [{ label: "Super Admin", variant: "primary" as const }]
+            : []),
+        ]}
+        size="md"
+        footer={
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="btn-secondary flex-1"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              onClick={handleSubmit}
+              className="btn-primary flex-1"
+            >
+              {editingUser ? "Update User" : "Create User"}
+            </button>
+          </div>
+        }
+      >
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Name Fields */}
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Personal Information
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.firstName}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      firstName: e.target.value,
+                    })
+                  }
+                  className="input-field"
+                  placeholder="First name"
+                  required
+                />
               </div>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Name Fields */}
-                <div className="glass-card p-4">
-                  <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
-                    Personal Information
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-secondary-300 mb-2">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.firstName}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            firstName: e.target.value,
-                          })
-                        }
-                        className="input-field"
-                        placeholder="First name"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-secondary-300 mb-2">
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.lastName}
-                        onChange={(e) =>
-                          setFormData({ ...formData, lastName: e.target.value })
-                        }
-                        className="input-field"
-                        placeholder="Last name"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Account Information */}
-                <div className="glass-card p-4">
-                  <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
-                    Account Information
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-secondary-300 mb-2">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
-                        className="input-field"
-                        placeholder="Email address"
-                        required
-                      />
-                    </div>
-
-                    {!editingUser && (
-                      <div>
-                        <label className="block text-sm font-medium text-secondary-300 mb-2">
-                          Password
-                        </label>
-                        <input
-                          type="password"
-                          value={formData.password}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              password: e.target.value,
-                            })
-                          }
-                          className="input-field"
-                          placeholder="Password"
-                          required={!editingUser}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Role & Department */}
-                <div className="glass-card p-4">
-                  <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
-                    Organization
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-secondary-300 mb-2">
-                        Role
-                      </label>
-                      <select
-                        value={formData.role}
-                        onChange={(e) =>
-                          setFormData({ ...formData, role: e.target.value })
-                        }
-                        className="input-field"
-                        required
-                      >
-                        <option value="" className="bg-secondary-800">
-                          Select a role
-                        </option>
-                        {roles.map((role) => (
-                          <option
-                            key={role._id}
-                            value={role._id}
-                            className="bg-secondary-800"
-                          >
-                            {role.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-secondary-300 mb-2">
-                        Department
-                      </label>
-                      <select
-                        value={formData.department}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            department: e.target.value,
-                          })
-                        }
-                        className="input-field"
-                        required
-                      >
-                        <option value="" className="bg-secondary-800">
-                          Select a department
-                        </option>
-                        {departments.map((dept) => (
-                          <option
-                            key={dept._id}
-                            value={dept._id}
-                            className="bg-secondary-800"
-                          >
-                            {dept.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Status & Permissions */}
-                <div className="glass-card p-4">
-                  <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
-                    Status & Permissions
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-secondary-300 mb-2">
-                        Status
-                      </label>
-                      <select
-                        value={formData.status}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            status: e.target.value as UserStatus,
-                          })
-                        }
-                        className="input-field"
-                      >
-                        {userStatuses.map((status) => (
-                          <option
-                            key={status}
-                            value={status}
-                            className="bg-secondary-800 capitalize"
-                          >
-                            {status.charAt(0).toUpperCase() + status.slice(1)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="flex items-end">
-                      <div
-                        onClick={() =>
-                          setFormData({
-                            ...formData,
-                            isSuperAdmin: !formData.isSuperAdmin,
-                          })
-                        }
-                        className={clsx(
-                          "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border cursor-pointer transition-all duration-200",
-                          formData.isSuperAdmin
-                            ? "bg-amber-500/20 border-amber-500/50 text-amber-400"
-                            : "bg-secondary-800/80 border-secondary-600/50 text-secondary-400 hover:bg-secondary-700",
-                        )}
-                      >
-                        <Shield
-                          className={clsx(
-                            "w-4 h-4",
-                            formData.isSuperAdmin && "animate-pulse",
-                          )}
-                        />
-                        <span className="text-sm font-medium">Super Admin</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {formData.isSuperAdmin && (
-                    <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex gap-3">
-                      <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
-                      <p className="text-xs text-amber-300/80 leading-relaxed">
-                        Warning: Super Admins have full access to the
-                        administration portal and all system data across all
-                        clients.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </form>
-            </div>
-
-            {/* Footer */}
-            <div className="bg-secondary-800/50 border-t border-secondary-700/50 p-6 shrink-0">
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="btn-secondary flex-1"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  onClick={handleSubmit}
-                  className="btn-primary flex-1"
-                >
-                  {editingUser ? "Update User" : "Create User"}
-                </button>
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.lastName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lastName: e.target.value })
+                  }
+                  className="input-field"
+                  placeholder="Last name"
+                  required
+                />
               </div>
             </div>
           </div>
-        </div>
-      )}
+
+          {/* Account Information */}
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Account Information
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  className="input-field"
+                  placeholder="Email address"
+                  required
+                />
+              </div>
+
+              {!editingUser && (
+                <div>
+                  <label className="block text-sm font-medium text-secondary-300 mb-2">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        password: e.target.value,
+                      })
+                    }
+                    className="input-field"
+                    placeholder="Password"
+                    required={!editingUser}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Role & Department */}
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Organization
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Role
+                </label>
+                <select
+                  value={formData.roleId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, roleId: e.target.value })
+                  }
+                  className="input-field"
+                  required
+                >
+                  <option value="" className="bg-secondary-800">
+                    Select a role
+                  </option>
+                  {roles.map((role) => (
+                    <option
+                      key={role._id}
+                      value={role._id}
+                      className="bg-secondary-800"
+                    >
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Department
+                </label>
+                <select
+                  value={formData.departmentId}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      departmentId: e.target.value,
+                    })
+                  }
+                  className="input-field"
+                  required
+                >
+                  <option value="" className="bg-secondary-800">
+                    Select a department
+                  </option>
+                  {departments.map((dept) => (
+                    <option
+                      key={dept._id}
+                      value={dept._id}
+                      className="bg-secondary-800"
+                    >
+                      {dept.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Status & Permissions */}
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Status & Permissions
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Status
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      status: e.target.value as UserStatus,
+                    })
+                  }
+                  className="input-field"
+                >
+                  {userStatuses.map((status) => (
+                    <option
+                      key={status}
+                      value={status}
+                      className="bg-secondary-800 capitalize"
+                    >
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                <div
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      isSuperAdmin: !formData.isSuperAdmin,
+                    })
+                  }
+                  className={clsx(
+                    "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border cursor-pointer transition-all duration-200",
+                    formData.isSuperAdmin
+                      ? "bg-amber-500/20 border-amber-500/50 text-amber-400"
+                      : "bg-secondary-800/80 border-secondary-600/50 text-secondary-400 hover:bg-secondary-700",
+                  )}
+                >
+                  <Shield
+                    className={clsx(
+                      "w-4 h-4",
+                      formData.isSuperAdmin && "animate-pulse",
+                    )}
+                  />
+                  <span className="text-sm font-medium">Super Admin</span>
+                </div>
+              </div>
+            </div>
+
+            {formData.isSuperAdmin && (
+              <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+                <p className="text-xs text-amber-300/80 leading-relaxed">
+                  Warning: Super Admins have full access to the administration
+                  portal and all system data across all clients.
+                </p>
+              </div>
+            )}
+          </div>
+        </form>
+      </SlideInModal>
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={deleteConfirmOpen}
