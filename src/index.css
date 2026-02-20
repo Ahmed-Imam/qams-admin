@@ -38,6 +38,26 @@ body {
   background: #64748b;
 }
 
+/* Thin custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
 /* Utility Classes */
 @layer components {
   .glass-card {
@@ -159,4 +179,42 @@ body {
 
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* React Quill Dark Mode Overrides */
+.qms-quill-editor .ql-toolbar {
+  @apply border-b border-secondary-700/50 bg-secondary-800/50 rounded-t-lg;
+}
+.qms-quill-editor .ql-container {
+  @apply border-0 text-white text-sm flex-1 overflow-y-auto rounded-b-lg font-sans;
+}
+.qms-quill-editor .ql-editor {
+  @apply min-h-[400px];
+}
+.qms-quill-editor .ql-stroke {
+  @apply stroke-secondary-400;
+}
+.qms-quill-editor .ql-fill {
+  @apply fill-secondary-400;
+}
+.qms-quill-editor .ql-picker {
+  @apply text-secondary-400;
+}
+.qms-quill-editor .ql-picker-options {
+  @apply bg-secondary-800 border-secondary-700 text-secondary-300;
+}
+.qms-quill-editor .ql-snow.ql-toolbar button:hover .ql-stroke,
+.qms-quill-editor .ql-snow .ql-toolbar button:hover .ql-stroke,
+.qms-quill-editor .ql-snow.ql-toolbar button.ql-active .ql-stroke,
+.qms-quill-editor .ql-snow .ql-toolbar button.ql-active .ql-stroke {
+  @apply stroke-white;
+}
+.qms-quill-editor .ql-snow.ql-toolbar button:hover .ql-fill,
+.qms-quill-editor .ql-snow .ql-toolbar button:hover .ql-fill,
+.qms-quill-editor .ql-snow.ql-toolbar button.ql-active .ql-fill,
+.qms-quill-editor .ql-snow .ql-toolbar button.ql-active .ql-fill {
+  @apply fill-white;
+}
+.qms-quill-editor .ql-editor.ql-blank::before {
+  @apply text-secondary-500 not-italic;
 }

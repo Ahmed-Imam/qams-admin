@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { SlideInModal } from "../components/SlideInModal";
 import { ConfirmationModal } from "../components/ConfirmationModal";
+import ReactQuill from "react-quill-new";
+import "react-quill-new/dist/quill.snow.css";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Accreditation } from "../api/accreditations";
@@ -149,6 +151,7 @@ export const Templates: React.FC = () => {
   const [totalTemplates, setTotalTemplates] = useState(0);
 
   const [showModal, setShowModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<"details" | "content">("details");
   const [editingTemplate, setEditingTemplate] =
     useState<OnboardingTemplate | null>(null);
 
@@ -392,6 +395,7 @@ export const Templates: React.FC = () => {
 
   const closeModal = () => {
     setShowModal(false);
+    setActiveTab("details");
     setEditingTemplate(null);
     setFormData({
       id: "",
@@ -480,11 +484,11 @@ export const Templates: React.FC = () => {
 
       {/* Templates Table */}
       <div className="flex-1 glass-card flex flex-col h-[calc(100vh-19rem)]">
-        <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar">
+        <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar rounded-t-2xl">
           <table className="w-full relative">
             <thead className="sticky top-0 z-10 bg-secondary-900/95 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
-              <tr className="border-b border-secondary-700/50">
-                <th className="table-header">Template ID</th>
+              <tr className="border-b border-secondary-700/50 ">
+                <th className="table-header ">Template ID</th>
                 <th className="table-header max-w-xs">Name</th>
                 <th className="table-header">Type</th>
                 <th className="table-header">Doc Type</th>
@@ -679,294 +683,336 @@ export const Templates: React.FC = () => {
           </div>
         }
       >
+        <div className="flex gap-1 pb-4 border-b border-secondary-700/30 mb-6 shrink-0">
+          {(["details", "content"] as const).map((tab) => {
+            if (tab === "content" && formData.templateType !== "document")
+              return null;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === tab
+                    ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
+                    : "text-secondary-400 hover:text-white border border-transparent hover:bg-secondary-700/30"
+                }`}
+              >
+                {tab === "details" ? "Details" : "Content"}
+              </button>
+            );
+          })}
+        </div>
+
         <form id="template-form" onSubmit={handleSubmit} className="space-y-6">
-          <div className="glass-card p-4">
-            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
-              Template Information
-            </h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+          <div className={activeTab === "details" ? "space-y-6" : "hidden"}>
+            <div className="glass-card p-4">
+              <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+                Template Information
+              </h3>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-300 mb-2">
+                      Template ID *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.id}
+                      onChange={(e) =>
+                        setFormData({ ...formData, id: e.target.value })
+                      }
+                      className="input-field"
+                      placeholder="e.g., DOC-QUALITY-POLICY"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-300 mb-2">
+                      Template Type *
+                    </label>
+                    <select
+                      value={formData.templateType}
+                      onChange={(e) => {
+                        const nextType = e.target
+                          .value as CreateTemplateDto["templateType"];
+                        const defaultType =
+                          nextType === "form_and_logs"
+                            ? "Form"
+                            : nextType === "incident_report"
+                              ? "Incident"
+                              : nextType === "checklist"
+                                ? "Checklist"
+                                : formData.type;
+                        if (
+                          nextType !== "document" &&
+                          activeTab === "content"
+                        ) {
+                          setActiveTab("details");
+                        }
+                        setFormData({
+                          ...formData,
+                          templateType: nextType,
+                          type: defaultType,
+                          form: undefined,
+                          checklist: undefined,
+                        });
+                      }}
+                      className="input-field"
+                      required
+                    >
+                      {templateTypes.map((tt) => (
+                        <option
+                          key={tt.value}
+                          value={tt.value}
+                          className="bg-secondary-800"
+                        >
+                          {tt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Template ID *
+                    Name *
                   </label>
                   <input
                     type="text"
-                    value={formData.id}
+                    value={formData.name}
                     onChange={(e) =>
-                      setFormData({ ...formData, id: e.target.value })
+                      setFormData({ ...formData, name: e.target.value })
                     }
                     className="input-field"
-                    placeholder="e.g., DOC-QUALITY-POLICY"
+                    placeholder="Template name"
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Template Type *
-                  </label>
-                  <select
-                    value={formData.templateType}
-                    onChange={(e) => {
-                      const nextType = e.target
-                        .value as CreateTemplateDto["templateType"];
-                      const defaultType =
-                        nextType === "form_and_logs"
-                          ? "Form"
-                          : nextType === "incident_report"
-                            ? "Incident"
-                            : nextType === "checklist"
-                              ? "Checklist"
-                              : formData.type;
-                      setFormData({
-                        ...formData,
-                        templateType: nextType,
-                        type: defaultType,
-                        form: undefined,
-                        checklist: undefined,
-                      });
-                    }}
-                    className="input-field"
-                    required
-                  >
-                    {templateTypes.map((tt) => (
-                      <option
-                        key={tt.value}
-                        value={tt.value}
-                        className="bg-secondary-800"
-                      >
-                        {tt.label}
+
+                {formData.templateType === "document" && (
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-300 mb-2">
+                      Document Type *
+                    </label>
+                    <select
+                      value={formData.type}
+                      onChange={(e) =>
+                        setFormData({ ...formData, type: e.target.value })
+                      }
+                      className="input-field"
+                      required
+                    >
+                      <option value="" className="bg-secondary-800">
+                        Select document type
                       </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="input-field"
-                  placeholder="Template name"
-                  required
-                />
-              </div>
-
-              {formData.templateType === "document" && (
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Document Type *
-                  </label>
-                  <select
-                    value={formData.type}
-                    onChange={(e) =>
-                      setFormData({ ...formData, type: e.target.value })
-                    }
-                    className="input-field"
-                    required
-                  >
-                    <option value="" className="bg-secondary-800">
-                      Select document type
-                    </option>
-                    {documentTypes.map((dt) => (
-                      <option
-                        key={dt._id}
-                        value={dt.code}
-                        className="bg-secondary-800"
-                      >
-                        {dt.name} ({dt.code})
-                      </option>
-                    ))}
-                  </select>
-                  {documentTypes.length === 0 && (
-                    <p className="text-xs text-secondary-500 mt-1">
-                      No common document types. Add them in Document Types
-                      first.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="glass-card p-4">
-            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
-              Related Information
-            </h3>
-            <div className="space-y-4">
-              {formData.templateType === "form_and_logs" && (
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Form *
-                  </label>
-                  <select
-                    value={formData.form ?? ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        form: e.target.value || undefined,
-                      })
-                    }
-                    className="input-field"
-                    required
-                  >
-                    <option value="" className="bg-secondary-800">
-                      {formsLoading
-                        ? "Loading forms..."
-                        : "Select a common form"}
-                    </option>
-                    {commonForms.map((f) => (
-                      <option
-                        key={f._id}
-                        value={f._id}
-                        className="bg-secondary-800"
-                      >
-                        {f.name}
-                      </option>
-                    ))}
-                  </select>
-                  {!formsLoading && commonForms.length === 0 && (
-                    <p className="text-xs text-secondary-500 mt-1">
-                      No common forms. Add them in Forms first.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {formData.templateType === "incident_report" && (
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Incident Report *
-                  </label>
-                  <select
-                    value={formData.form ?? ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        form: e.target.value || undefined,
-                      })
-                    }
-                    className="input-field"
-                    required
-                  >
-                    <option value="" className="bg-secondary-800">
-                      {formsLoading
-                        ? "Loading incident reports..."
-                        : "Select a common incident report"}
-                    </option>
-                    {commonIncidents.map((f) => (
-                      <option
-                        key={f._id}
-                        value={f._id}
-                        className="bg-secondary-800"
-                      >
-                        {f.name}
-                      </option>
-                    ))}
-                  </select>
-                  {!formsLoading && commonIncidents.length === 0 && (
-                    <p className="text-xs text-secondary-500 mt-1">
-                      No common incident reports. Add them in Forms first.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {formData.templateType === "checklist" && (
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Checklist *
-                  </label>
-                  <select
-                    value={formData.checklist ?? ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        checklist: e.target.value || undefined,
-                      })
-                    }
-                    className="input-field"
-                    required
-                  >
-                    <option value="" className="bg-secondary-800">
-                      {formsLoading
-                        ? "Loading checklists..."
-                        : "Select a common checklist"}
-                    </option>
-                    {commonChecklists.map((c) => (
-                      <option
-                        key={c._id}
-                        value={c._id}
-                        className="bg-secondary-800"
-                      >
-                        {c.name}
-                        {c.code ? ` (${c.code})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                  {!formsLoading && commonChecklists.length === 0 && (
-                    <p className="text-xs text-secondary-500 mt-1">
-                      No common checklists. Add them in Common Checklists first.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <AutocompleteInput
-                value={formData.accreditation}
-                onChange={(value) =>
-                  setFormData({ ...formData, accreditation: value })
-                }
-                options={accreditationOptions}
-                placeholder="Search accreditations..."
-                label="Accreditations *"
-              />
-
-              <AutocompleteInput
-                value={formData.facilityType || []}
-                onChange={(value) =>
-                  setFormData({ ...formData, facilityType: value })
-                }
-                options={autocompleteOptions.filter((opt) =>
-                  opt.startsWith("FT_"),
+                      {documentTypes.map((dt) => (
+                        <option
+                          key={dt._id}
+                          value={dt.code}
+                          className="bg-secondary-800"
+                        >
+                          {dt.name} ({dt.code})
+                        </option>
+                      ))}
+                    </select>
+                    {documentTypes.length === 0 && (
+                      <p className="text-xs text-secondary-500 mt-1">
+                        No common document types. Add them in Document Types
+                        first.
+                      </p>
+                    )}
+                  </div>
                 )}
-                placeholder="Search Option IDs..."
-                label="Facility Types (optional)"
-              />
-
-              <AutocompleteInput
-                value={formData.triggerIds}
-                onChange={(value) =>
-                  setFormData({ ...formData, triggerIds: value })
-                }
-                options={autocompleteOptions}
-                placeholder="Search Option IDs..."
-                label="Trigger IDs *"
-              />
+              </div>
             </div>
-          </div>
 
-          {formData.templateType === "document" && (
             <div className="glass-card p-4">
               <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
-                Content
+                Related Information
               </h3>
-              <textarea
-                value={formData.content}
-                onChange={(e) =>
-                  setFormData({ ...formData, content: e.target.value })
-                }
-                className="input-field min-h-[200px] resize-none font-mono text-sm"
-                placeholder="Template content (e.g. HTML for document templates)"
-              />
+              <div className="space-y-4">
+                {formData.templateType === "form_and_logs" && (
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-300 mb-2">
+                      Form *
+                    </label>
+                    <select
+                      value={formData.form ?? ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          form: e.target.value || undefined,
+                        })
+                      }
+                      className="input-field"
+                      required
+                    >
+                      <option value="" className="bg-secondary-800">
+                        {formsLoading
+                          ? "Loading forms..."
+                          : "Select a common form"}
+                      </option>
+                      {commonForms.map((f) => (
+                        <option
+                          key={f._id}
+                          value={f._id}
+                          className="bg-secondary-800"
+                        >
+                          {f.name}
+                        </option>
+                      ))}
+                    </select>
+                    {!formsLoading && commonForms.length === 0 && (
+                      <p className="text-xs text-secondary-500 mt-1">
+                        No common forms. Add them in Forms first.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {formData.templateType === "incident_report" && (
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-300 mb-2">
+                      Incident Report *
+                    </label>
+                    <select
+                      value={formData.form ?? ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          form: e.target.value || undefined,
+                        })
+                      }
+                      className="input-field"
+                      required
+                    >
+                      <option value="" className="bg-secondary-800">
+                        {formsLoading
+                          ? "Loading incident reports..."
+                          : "Select a common incident report"}
+                      </option>
+                      {commonIncidents.map((f) => (
+                        <option
+                          key={f._id}
+                          value={f._id}
+                          className="bg-secondary-800"
+                        >
+                          {f.name}
+                        </option>
+                      ))}
+                    </select>
+                    {!formsLoading && commonIncidents.length === 0 && (
+                      <p className="text-xs text-secondary-500 mt-1">
+                        No common incident reports. Add them in Forms first.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {formData.templateType === "checklist" && (
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-300 mb-2">
+                      Checklist *
+                    </label>
+                    <select
+                      value={formData.checklist ?? ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          checklist: e.target.value || undefined,
+                        })
+                      }
+                      className="input-field"
+                      required
+                    >
+                      <option value="" className="bg-secondary-800">
+                        {formsLoading
+                          ? "Loading checklists..."
+                          : "Select a common checklist"}
+                      </option>
+                      {commonChecklists.map((c) => (
+                        <option
+                          key={c._id}
+                          value={c._id}
+                          className="bg-secondary-800"
+                        >
+                          {c.name}
+                          {c.code ? ` (${c.code})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                    {!formsLoading && commonChecklists.length === 0 && (
+                      <p className="text-xs text-secondary-500 mt-1">
+                        No common checklists. Add them in Common Checklists
+                        first.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <AutocompleteInput
+                  value={formData.accreditation}
+                  onChange={(value) =>
+                    setFormData({ ...formData, accreditation: value })
+                  }
+                  options={accreditationOptions}
+                  placeholder="Search accreditations..."
+                  label="Accreditations *"
+                />
+
+                <AutocompleteInput
+                  value={formData.facilityType || []}
+                  onChange={(value) =>
+                    setFormData({ ...formData, facilityType: value })
+                  }
+                  options={autocompleteOptions.filter((opt) =>
+                    opt.startsWith("FT_"),
+                  )}
+                  placeholder="Search Option IDs..."
+                  label="Facility Types (optional)"
+                />
+
+                <AutocompleteInput
+                  value={formData.triggerIds}
+                  onChange={(value) =>
+                    setFormData({ ...formData, triggerIds: value })
+                  }
+                  options={autocompleteOptions}
+                  placeholder="Search Option IDs..."
+                  label="Trigger IDs *"
+                />
+              </div>
             </div>
-          )}
+          </div>
+
+          <div className={activeTab === "content" ? "space-y-6" : "hidden"}>
+            {formData.templateType === "document" && (
+              <div className="glass-card p-4 flex flex-col flex-1 h-full min-h-[450px]">
+                <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+                  Content
+                </h3>
+                <div className="flex-1 overflow-hidden flex flex-col qms-quill-editor bg-secondary-900 border border-secondary-700 rounded-lg">
+                  <ReactQuill
+                    theme="snow"
+                    value={formData.content}
+                    onChange={(content) =>
+                      setFormData({ ...formData, content })
+                    }
+                    className="h-full flex flex-col"
+                    modules={{
+                      toolbar: [
+                        [{ header: [1, 2, 3, false] }],
+                        ["bold", "italic", "underline", "strike", "blockquote"],
+                        [{ list: "ordered" }, { list: "bullet" }],
+                        ["link"],
+                      ],
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </form>
       </SlideInModal>
 

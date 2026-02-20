@@ -291,7 +291,7 @@ export const Users: React.FC = () => {
             <div className="h-full bg-primary-500 w-1/3 animate-[slide_1.5s_ease-in-out_infinite]"></div>
           </div>
         )}
-        <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar">
+        <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar rounded-t-2xl">
           <table className="w-full relative">
             <thead className="sticky top-0 z-10 bg-secondary-900/95 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
               <tr>

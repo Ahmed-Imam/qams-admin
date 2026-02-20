@@ -476,7 +476,7 @@ export const ActivityLogs: React.FC = () => {
 
       {/* Table */}
       <div className="flex-1 glass-card flex flex-col h-[calc(100vh-24rem)]">
-        <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar">
+        <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar rounded-t-2xl">
           <table className="w-full relative">
             <thead className="sticky top-0 z-10 bg-secondary-900/95 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
               <tr className="border-b border-secondary-700/50">
