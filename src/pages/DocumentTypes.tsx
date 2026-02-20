@@ -1,5 +1,6 @@
-import { Edit, FileStack, Plus, Search, Trash2 } from "lucide-react";
+import { Edit, FileStack, Plus, Search, Trash2, X } from "lucide-react";
 import { SlideInModal } from "../components/SlideInModal";
+import { ConfirmationModal } from "../components/ConfirmationModal";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { documentTypesAPI } from "../api/documentTypes";
@@ -44,6 +45,10 @@ export const DocumentTypes: React.FC = () => {
   const [editingDoc, setEditingDoc] = useState<DocumentType | null>(null);
   const [formData, setFormData] =
     useState<CreateDocumentTypeDto>(getInitialFormData());
+
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [docToDelete, setDocToDelete] = useState<{ id: string } | null>(null);
 
   const fetchData = async () => {
     try {
@@ -112,10 +117,15 @@ export const DocumentTypes: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this document type?")) return;
+  const openDeleteConfirm = (id: string) => {
+    setDocToDelete({ id });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!docToDelete) return;
     try {
-      await documentTypesAPI.delete(id);
+      await documentTypesAPI.delete(docToDelete.id);
       toast.success("Document type deleted successfully");
       fetchData();
     } catch (error: any) {
@@ -175,8 +185,16 @@ export const DocumentTypes: React.FC = () => {
             placeholder="Search by name or code..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10"
+            className="input-field pl-10 pr-10"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-secondary-500 hover:text-white hover:bg-secondary-700 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -200,7 +218,7 @@ export const DocumentTypes: React.FC = () => {
                   <Edit className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => handleDelete(doc._id)}
+                  onClick={() => openDeleteConfirm(doc._id)}
                   className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -396,6 +414,17 @@ export const DocumentTypes: React.FC = () => {
           </div>
         </form>
       </SlideInModal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Document Type"
+        message="Are you sure you want to delete this document type? This action cannot be undone."
+        confirmText="Delete Document Type"
+        variant="danger"
+      />
     </div>
   );
 };

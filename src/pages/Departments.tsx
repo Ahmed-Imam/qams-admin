@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { FolderTree, Plus, Search, Edit, Trash2, X } from "lucide-react";
+import { FolderTree, Plus, Search, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { departmentsAPI } from "../api/departments";
 import { clientsAPI } from "../api/clients";
 import type { Department, CreateDepartmentDto, Client } from "../types";
-import clsx from "clsx";
+import { SlideInModal } from "../components/SlideInModal";
 
 export const Departments: React.FC = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -255,148 +255,112 @@ export const Departments: React.FC = () => {
       )}
 
       {/* Modal - Slide-in Panel */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={closeModal}
-          />
-
-          {/* Panel */}
-          <div className="absolute right-0 top-0 h-full w-full max-w-2xl bg-secondary-900 shadow-2xl flex flex-col animate-slide-in border-l border-secondary-700/50">
-            {/* Header */}
-            <div className="bg-secondary-800/50 border-b border-secondary-700/50 p-6 shrink-0">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <div
-                    className={clsx(
-                      "p-3 rounded-2xl",
-                      editingDept
-                        ? "bg-emerald-500/20 border border-emerald-500/30"
-                        : "bg-emerald-500/20 border border-emerald-500/30",
-                    )}
-                  >
-                    <FolderTree className="w-6 h-6 text-emerald-400" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-white tracking-tight">
-                      {editingDept ? "Edit Department" : "Add New Department"}
-                    </h2>
-                    {editingDept && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="px-2 py-0.5 bg-secondary-700 text-secondary-300 text-[10px] font-bold rounded-md uppercase tracking-wider border border-secondary-600">
-                          {editingDept.name}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <button
-                  onClick={closeModal}
-                  className="p-2.5 text-secondary-400 hover:text-white hover:bg-secondary-700/50 rounded-xl transition-all"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+      <SlideInModal
+        isOpen={showModal}
+        onClose={closeModal}
+        title={editingDept ? "Edit Department" : "Add New Department"}
+        icon={FolderTree}
+        iconColor="emerald"
+        badges={
+          editingDept
+            ? [
+                {
+                  label: editingDept.name,
+                  variant: "default",
+                },
+              ]
+            : []
+        }
+        size="md"
+        footer={
+          <div className="flex gap-3 w-full">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="btn-secondary flex-1"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              onClick={handleSubmit}
+              className="btn-primary flex-1"
+            >
+              {editingDept ? "Update Department" : "Create Department"}
+            </button>
+          </div>
+        }
+      >
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Information */}
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Department Information
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  className="input-field"
+                  placeholder="Department name"
+                  required
+                />
               </div>
-            </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Basic Information */}
-                <div className="glass-card p-4">
-                  <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
-                    Department Information
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-secondary-300 mb-2">
-                        Name
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        className="input-field"
-                        placeholder="Department name"
-                        required
-                      />
-                    </div>
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      description: e.target.value,
+                    })
+                  }
+                  className="input-field min-h-[80px] resize-none"
+                  placeholder="Department description"
+                />
+              </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-secondary-300 mb-2">
-                        Description
-                      </label>
-                      <textarea
-                        value={formData.description}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            description: e.target.value,
-                          })
-                        }
-                        className="input-field min-h-[80px] resize-none"
-                        placeholder="Department description"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-secondary-300 mb-2">
-                        Client
-                      </label>
-                      <select
-                        value={formData.client}
-                        onChange={(e) =>
-                          setFormData({ ...formData, client: e.target.value })
-                        }
-                        className="input-field"
-                        required
-                      >
-                        <option value="" className="bg-secondary-800">
-                          Select a client
-                        </option>
-                        {clients.map((client) => (
-                          <option
-                            key={client._id}
-                            value={client._id}
-                            className="bg-secondary-800"
-                          >
-                            {client.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </form>
-            </div>
-
-            {/* Footer */}
-            <div className="bg-secondary-800/50 border-t border-secondary-700/50 p-6 shrink-0">
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="btn-secondary flex-1"
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Client
+                </label>
+                <select
+                  value={formData.client}
+                  onChange={(e) =>
+                    setFormData({ ...formData, client: e.target.value })
+                  }
+                  className="input-field"
+                  required
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  onClick={handleSubmit}
-                  className="btn-primary flex-1"
-                >
-                  {editingDept ? "Update Department" : "Create Department"}
-                </button>
+                  <option value="" className="bg-secondary-800">
+                    Select a client
+                  </option>
+                  {clients.map((client) => (
+                    <option
+                      key={client._id}
+                      value={client._id}
+                      className="bg-secondary-800"
+                    >
+                      {client.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        </form>
+      </SlideInModal>
     </div>
   );
 };

@@ -10,6 +10,7 @@ import {
   UserPlus,
   Users,
   X,
+  Filter,
 } from "lucide-react";
 import { SlideInModal } from "../components/SlideInModal";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -31,6 +32,7 @@ export const Clients: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [formData, setFormData] = useState<CreateClientDto>({
@@ -75,12 +77,15 @@ export const Clients: React.FC = () => {
     fetchClients();
   }, []);
 
-  const filteredClients = clients.filter(
-    (client) =>
+  const filteredClients = clients.filter((client) => {
+    const matchesSearch =
       client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       client.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.classification.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+      client.classification.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = typeFilter === "all" || client.type === typeFilter;
+
+    return matchesSearch && matchesType;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -279,17 +284,46 @@ export const Clients: React.FC = () => {
         </button>
       </div>
 
-      {/* Search */}
-      <div className="glass-card p-4">
-        <div className="relative">
+      {/* Search and Filters */}
+      <div className="glass-card p-4 flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
           <input
             type="text"
             placeholder="Search clients..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10"
+            className="input-field pl-10 pr-10"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-secondary-500 hover:text-white hover:bg-secondary-700 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        <div className="relative">
+          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="input-field pl-10 pr-8 min-w-[150px]"
+          >
+            <option value="all" className="bg-secondary-800">
+              All Types
+            </option>
+            {clientTypes.map((type) => (
+              <option
+                key={type}
+                value={type}
+                className="bg-secondary-800 capitalize"
+              >
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -487,126 +521,118 @@ export const Clients: React.FC = () => {
 
       {/* Manage Users Modal */}
       {showManageUsersModal && manageUsersClient && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="glass-card w-full max-w-lg max-h-[90vh] flex flex-col animate-fadeIn p-4">
-            <div className="flex items-center justify-between mb-4 flex-shrink-0">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary-400" />
-                Manage Users — {manageUsersClient.name}
-              </h2>
-              <button
-                onClick={closeManageUsersModal}
-                className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <SlideInModal
+          isOpen={true}
+          onClose={closeManageUsersModal}
+          title={`Manage Users — ${manageUsersClient.name}`}
+          icon={Users}
+          iconColor="primary"
+          size="md"
+        >
+          {loadingManageUsers ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
             </div>
-
-            {loadingManageUsers ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : (
-              <>
-                <div className="mb-4 flex-shrink-0" ref={userAutocompleteRef}>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Add user to client
-                  </label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-400 pointer-events-none" />
-                    <input
-                      type="text"
-                      value={userSearchQuery}
-                      onChange={(e) => {
-                        setUserSearchQuery(e.target.value);
-                        setUserDropdownOpen(true);
-                      }}
-                      onFocus={() => setUserDropdownOpen(true)}
-                      placeholder="Search by name or email..."
-                      className="input-field pl-9 w-full"
-                      autoComplete="off"
-                    />
-                    {userDropdownOpen && (
-                      <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-secondary-800 border border-secondary-700/50 rounded-xl shadow-xl overflow-hidden max-h-56 overflow-y-auto">
-                        {userSearchLoading ? (
-                          <div className="flex items-center justify-center gap-2 py-4 text-secondary-400 text-sm">
-                            <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                            Searching...
-                          </div>
-                        ) : userSearchQuery.trim().length < 2 ? (
-                          <div className="py-4 px-4 text-secondary-400 text-sm text-center">
-                            Type at least 2 characters to search users
-                          </div>
-                        ) : userSearchResultsNotInClient.length === 0 ? (
-                          <div className="py-4 px-4 text-secondary-400 text-sm text-center">
-                            {userSearchResults.length === 0
-                              ? "No users found"
-                              : "All matching users are already in this client"}
-                          </div>
-                        ) : (
-                          userSearchResultsNotInClient.map((user) => (
-                            <button
-                              key={user._id}
-                              type="button"
-                              onClick={() => handleAddUserToClient(user._id)}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary-700/50 transition-colors border-b border-secondary-700/30 last:border-0"
-                            >
-                              <div className="p-1.5 rounded-lg bg-primary-500/20">
-                                <UserPlus className="w-4 h-4 text-primary-400" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-white font-medium truncate">
-                                  {user.firstName} {user.lastName}
-                                </p>
-                                <p className="text-sm text-secondary-400 truncate">
-                                  {user.email}
-                                </p>
-                              </div>
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="border border-secondary-700/50 rounded-xl overflow-hidden flex-1 min-h-0">
-                  <div className="max-h-64 overflow-y-auto divide-y divide-secondary-700/50">
-                    {clientUsers.length === 0 ? (
-                      <div className="py-8 text-center text-secondary-400 text-sm">
-                        No users assigned to this client yet.
-                      </div>
-                    ) : (
-                      clientUsers.map((user) => (
-                        <div
-                          key={user._id}
-                          className="flex items-center justify-between px-4 py-3 hover:bg-secondary-700/30 transition-colors"
-                        >
-                          <div>
-                            <p className="text-white font-medium">
-                              {user.firstName} {user.lastName}
-                            </p>
-                            <p className="text-sm text-secondary-400">
-                              {user.email}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveUserFromClient(user._id)}
-                            className="p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
-                            title="Remove from client"
-                          >
-                            <UserMinus className="w-4 h-4" />
-                          </button>
+          ) : (
+            <>
+              <div className="mb-4 flex-shrink-0" ref={userAutocompleteRef}>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Add user to client
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={userSearchQuery}
+                    onChange={(e) => {
+                      setUserSearchQuery(e.target.value);
+                      setUserDropdownOpen(true);
+                    }}
+                    onFocus={() => setUserDropdownOpen(true)}
+                    placeholder="Search by name or email..."
+                    className="input-field pl-9 w-full"
+                    autoComplete="off"
+                  />
+                  {userDropdownOpen && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-secondary-800 border border-secondary-700/50 rounded-xl shadow-xl overflow-hidden max-h-56 overflow-y-auto">
+                      {userSearchLoading ? (
+                        <div className="flex items-center justify-center gap-2 py-4 text-secondary-400 text-sm">
+                          <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                          Searching...
                         </div>
-                      ))
-                    )}
-                  </div>
+                      ) : userSearchQuery.trim().length < 2 ? (
+                        <div className="py-4 px-4 text-secondary-400 text-sm text-center">
+                          Type at least 2 characters to search users
+                        </div>
+                      ) : userSearchResultsNotInClient.length === 0 ? (
+                        <div className="py-4 px-4 text-secondary-400 text-sm text-center">
+                          {userSearchResults.length === 0
+                            ? "No users found"
+                            : "All matching users are already in this client"}
+                        </div>
+                      ) : (
+                        userSearchResultsNotInClient.map((user) => (
+                          <button
+                            key={user._id}
+                            type="button"
+                            onClick={() => handleAddUserToClient(user._id)}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary-700/50 transition-colors border-b border-secondary-700/30 last:border-0"
+                          >
+                            <div className="p-1.5 rounded-lg bg-primary-500/20">
+                              <UserPlus className="w-4 h-4 text-primary-400" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-white font-medium truncate">
+                                {user.firstName} {user.lastName}
+                              </p>
+                              <p className="text-sm text-secondary-400 truncate">
+                                {user.email}
+                              </p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
                 </div>
-              </>
-            )}
-          </div>
-        </div>
+              </div>
+
+              <div className="border border-secondary-700/50 rounded-xl overflow-hidden flex-1 min-h-0">
+                <div className="max-h-64 overflow-y-auto divide-y divide-secondary-700/50">
+                  {clientUsers.length === 0 ? (
+                    <div className="py-8 text-center text-secondary-400 text-sm">
+                      No users assigned to this client yet.
+                    </div>
+                  ) : (
+                    clientUsers.map((user) => (
+                      <div
+                        key={user._id}
+                        className="flex items-center justify-between px-4 py-3 hover:bg-secondary-700/30 transition-colors"
+                      >
+                        <div>
+                          <p className="text-white font-medium">
+                            {user.firstName} {user.lastName}
+                          </p>
+                          <p className="text-sm text-secondary-400">
+                            {user.email}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveUserFromClient(user._id)}
+                          className="p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                          title="Remove from client"
+                        >
+                          <UserMinus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </SlideInModal>
       )}
 
       {/* Delete Confirmation Modal */}

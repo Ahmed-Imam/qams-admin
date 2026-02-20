@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { SlideInModal } from "../components/SlideInModal";
+import { ConfirmationModal } from "../components/ConfirmationModal";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { questionsAPI } from "../api/questions";
@@ -48,6 +49,12 @@ export const Questions: React.FC = () => {
     useState(false);
   const facilityTypeInputRef = useRef<HTMLInputElement>(null);
   const facilityTypeDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [questionToDelete, setQuestionToDelete] = useState<{
+    id: string;
+  } | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -159,10 +166,15 @@ export const Questions: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this question?")) return;
+  const openDeleteConfirm = (id: string) => {
+    setQuestionToDelete({ id });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!questionToDelete) return;
     try {
-      await questionsAPI.delete(id);
+      await questionsAPI.delete(questionToDelete.id);
       toast.success("Question deleted successfully");
       fetchData();
     } catch (error: any) {
@@ -355,8 +367,16 @@ export const Questions: React.FC = () => {
             placeholder="Search questions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10"
+            className="input-field pl-10 pr-10"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-secondary-500 hover:text-white hover:bg-secondary-700 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
         <div className="relative">
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
@@ -412,10 +432,15 @@ export const Questions: React.FC = () => {
       </div>
 
       {/* Questions Table */}
-      <div className="glass-card overflow-hidden min-h-[400px]">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
+      <div className="glass-card flex flex-col h-[calc(100vh-18rem)]">
+        {loading && questions.length > 0 && (
+          <div className="absolute top-0 left-0 w-full h-1 bg-secondary-800 overflow-hidden z-20 rounded-t-xl">
+            <div className="h-full bg-primary-500 w-1/3 animate-[slide_1.5s_ease-in-out_infinite]"></div>
+          </div>
+        )}
+        <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar ">
+          <table className="w-full relative">
+            <thead className="sticky top-0 z-10 bg-secondary-900/95 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
               <tr className="border-b border-secondary-700/50">
                 <th className="table-header">Question Code</th>
                 <th className="table-header max-w-xs">Title</th>
@@ -521,7 +546,7 @@ export const Questions: React.FC = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(question._id)}
+                        onClick={() => openDeleteConfirm(question._id)}
                         className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -905,6 +930,16 @@ export const Questions: React.FC = () => {
           </div>
         </form>
       </SlideInModal>
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Question"
+        message="Are you sure you want to delete this question? This action cannot be undone."
+        confirmText="Delete Question"
+        variant="danger"
+      />
     </div>
   );
 };

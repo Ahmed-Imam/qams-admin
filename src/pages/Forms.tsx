@@ -18,6 +18,7 @@ import type {
   FormType,
 } from "../api/forms";
 import { formsAPI } from "../api/forms";
+import { SlideInModal } from "../components/SlideInModal";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 
 const FIELD_TYPE_OPTIONS: { value: FormFieldType; label: string }[] = [
@@ -212,360 +213,33 @@ const FormModal: React.FC<FormModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="glass-card w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-fadeIn my-8">
-        <div className="flex items-center justify-between p-6 border-b border-secondary-700/50 flex-shrink-0">
-          <h2 className="text-xl font-bold text-white">
-            {mode === "edit" ? "Edit Form" : "Add Form"}
-            {formType === "incident" ? " (Incident Report)" : ""}
-          </h2>
+    <SlideInModal
+      isOpen={isOpen}
+      onClose={() => {
+        setActiveTab("info");
+        onClose();
+      }}
+      title={
+        (mode === "edit" ? "Edit Form" : "Add Form") +
+        (formType === "incident" ? " (Incident Report)" : "")
+      }
+      icon={FileText}
+      iconColor={mode === "edit" ? "amber" : "primary"}
+      badges={[
+        {
+          label: mode === "edit" ? "Editing" : "New",
+          variant: mode === "edit" ? "primary" : "default",
+        },
+      ]}
+      size="lg"
+      footer={
+        <div className="flex gap-3 w-full">
           <button
             type="button"
             onClick={() => {
               setActiveTab("info");
               onClose();
             }}
-            className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="flex gap-1 p-4 pb-4 border-b border-secondary-700/30 flex-shrink-0">
-          {(["info", "fields", "advanced"] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
-                  : "text-secondary-400 hover:text-white border border-transparent"
-              }`}
-            >
-              {tab === "info" ? "Info" : tab === "fields" ? "Fields" : "CAPA"}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {activeTab === "info" && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Name <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  className="input-field"
-                  placeholder="e.g. Risk Assessment Form"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  className="input-field min-h-[80px] resize-none"
-                  placeholder="Describe the purpose of this form"
-                />
-              </div>
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary-800/50 border border-secondary-700/50">
-                <input
-                  type="checkbox"
-                  id="capaRequired"
-                  checked={formData.capaRequired}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      capaRequired: e.target.checked,
-                    }))
-                  }
-                  className="w-4 h-4 rounded border-secondary-600 text-primary-500 focus:ring-primary-500"
-                />
-                <label
-                  htmlFor="capaRequired"
-                  className="text-sm font-medium text-secondary-300 cursor-pointer"
-                >
-                  CAPA required after form submission
-                </label>
-              </div>
-            </>
-          )}
-
-          {activeTab === "fields" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-white">Form Fields</h3>
-                <button
-                  type="button"
-                  onClick={addField}
-                  className="btn-primary flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Field
-                </button>
-              </div>
-              {formData.formFields.length === 0 ? (
-                <div className="text-center py-8 text-secondary-500">
-                  <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No fields yet. Add fields to build your form.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {formData.formFields.map((field, index) => (
-                    <div
-                      key={field._id}
-                      className="glass-card p-4 border border-secondary-700/50"
-                    >
-                      <div className="flex items-start gap-2 mb-3">
-                        <div className="flex items-center gap-1 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => moveField(field._id, "up")}
-                            disabled={index === 0}
-                            className="p-1.5 text-secondary-400 hover:text-white disabled:opacity-30 rounded"
-                          >
-                            ↑
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveField(field._id, "down")}
-                            disabled={index === formData.formFields.length - 1}
-                            className="p-1.5 text-secondary-400 hover:text-white disabled:opacity-30 rounded"
-                          >
-                            ↓
-                          </button>
-                        </div>
-                        <GripVertical className="w-4 h-4 text-secondary-500 flex-shrink-0 mt-1" />
-                        <div className="flex-1 grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-medium text-secondary-400 mb-1">
-                              Field name
-                            </label>
-                            <input
-                              type="text"
-                              value={field.name}
-                              onChange={(e) =>
-                                updateField(field._id, {
-                                  name: e.target.value,
-                                })
-                              }
-                              className="input-field text-sm"
-                              placeholder="e.g. full_name"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-secondary-400 mb-1">
-                              Label
-                            </label>
-                            <input
-                              type="text"
-                              value={field.label}
-                              onChange={(e) =>
-                                updateField(field._id, {
-                                  label: e.target.value,
-                                })
-                              }
-                              className="input-field text-sm"
-                              placeholder="e.g. Full Name"
-                            />
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <label className="flex items-center gap-2 text-sm text-secondary-400">
-                            <input
-                              type="checkbox"
-                              checked={field.required}
-                              onChange={(e) =>
-                                updateField(field._id, {
-                                  required: e.target.checked,
-                                })
-                              }
-                              className="w-4 h-4 rounded border-secondary-600 text-primary-500"
-                            />
-                            Required
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => removeField(field._id)}
-                            className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 mt-2">
-                        <div>
-                          <label className="block text-xs font-medium text-secondary-400 mb-1">
-                            Type
-                          </label>
-                          <select
-                            value={field.type}
-                            onChange={(e) =>
-                              updateField(field._id, {
-                                type: e.target.value as FormFieldType,
-                              })
-                            }
-                            className="input-field text-sm"
-                          >
-                            {FIELD_TYPE_OPTIONS.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-secondary-400 mb-1">
-                            Placeholder
-                          </label>
-                          <input
-                            type="text"
-                            value={field.placeholder || ""}
-                            onChange={(e) =>
-                              updateField(field._id, {
-                                placeholder: e.target.value,
-                              })
-                            }
-                            className="input-field text-sm"
-                            placeholder="Optional"
-                          />
-                        </div>
-                      </div>
-                      {field.type === "dropdown" && (
-                        <div className="mt-3">
-                          <label className="block text-xs font-medium text-secondary-400 mb-1">
-                            Options (one per line)
-                          </label>
-                          <textarea
-                            value={
-                              fieldOptionsText[field._id] ??
-                              field.options?.join("\n") ??
-                              ""
-                            }
-                            onChange={(e) => {
-                              const text = e.target.value;
-                              setFieldOptionsText((prev) => ({
-                                ...prev,
-                                [field._id]: text,
-                              }));
-                              const options = text
-                                .split("\n")
-                                .map((o) => o.trim())
-                                .filter(Boolean);
-                              updateField(field._id, { options });
-                            }}
-                            className="input-field text-sm min-h-[80px] resize-y"
-                            placeholder="Option 1&#10;Option 2"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === "advanced" && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-white">CAPA Triggers</h3>
-              <p className="text-sm text-secondary-400">
-                Configure automatic CAPA creation based on field responses.
-              </p>
-              <div className="space-y-3">
-                {formData.capaTriggers.map((trigger, index) => (
-                  <div
-                    key={index}
-                    className="glass-card p-4 flex items-center gap-3 flex-wrap"
-                  >
-                    <select
-                      value={trigger.field}
-                      onChange={(e) => {
-                        const next = [...formData.capaTriggers];
-                        next[index] = { ...next[index], field: e.target.value };
-                        setFormData((prev) => ({
-                          ...prev,
-                          capaTriggers: next,
-                        }));
-                      }}
-                      className="input-field flex-1 min-w-[120px]"
-                    >
-                      <option value="">Select field</option>
-                      {formData.formFields.map((f) => (
-                        <option key={f.name} value={f.name}>
-                          {f.label || f.name}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="text"
-                      value={trigger.value}
-                      onChange={(e) => {
-                        const next = [...formData.capaTriggers];
-                        next[index] = { ...next[index], value: e.target.value };
-                        setFormData((prev) => ({
-                          ...prev,
-                          capaTriggers: next,
-                        }));
-                      }}
-                      className="input-field flex-1 min-w-[120px]"
-                      placeholder="Value that triggers CAPA"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          capaTriggers: prev.capaTriggers.filter(
-                            (_, i) => i !== index,
-                          ),
-                        }))
-                      }
-                      className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      capaTriggers: [
-                        ...prev.capaTriggers,
-                        { field: "", value: "" },
-                      ],
-                    }))
-                  }
-                  className="w-full py-3 rounded-lg border-2 border-dashed border-secondary-600 text-secondary-400 hover:border-primary-500/50 hover:text-primary-400 flex items-center justify-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add CAPA Trigger
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-3 p-6 border-t border-secondary-700/50 flex-shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
             className="btn-secondary flex-1"
           >
             Cancel
@@ -580,8 +254,339 @@ const FormModal: React.FC<FormModalProps> = ({
             {mode === "edit" ? "Update" : "Create"}
           </button>
         </div>
+      }
+    >
+      <div className="flex gap-1 pb-4 border-b border-secondary-700/30 mb-6 shrink-0">
+        {(["info", "fields", "advanced"] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === tab
+                ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
+                : "text-secondary-400 hover:text-white border border-transparent hover:bg-secondary-700/30"
+            }`}
+          >
+            {tab === "info" ? "Info" : tab === "fields" ? "Fields" : "CAPA"}
+          </button>
+        ))}
       </div>
-    </div>
+
+      <div className="space-y-4">
+        {activeTab === "info" && (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-secondary-300 mb-2">
+                Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
+                className="input-field"
+                placeholder="e.g. Risk Assessment Form"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-secondary-300 mb-2">
+                Description
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                className="input-field min-h-[80px] resize-none"
+                placeholder="Describe the purpose of this form"
+              />
+            </div>
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary-800/50 border border-secondary-700/50">
+              <input
+                type="checkbox"
+                id="capaRequired"
+                checked={formData.capaRequired}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    capaRequired: e.target.checked,
+                  }))
+                }
+                className="w-4 h-4 rounded border-secondary-600 text-primary-500 focus:ring-primary-500"
+              />
+              <label
+                htmlFor="capaRequired"
+                className="text-sm font-medium text-secondary-300 cursor-pointer"
+              >
+                CAPA required after form submission
+              </label>
+            </div>
+          </>
+        )}
+
+        {activeTab === "fields" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-white">Form Fields</h3>
+              <button
+                type="button"
+                onClick={addField}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Field
+              </button>
+            </div>
+            {formData.formFields.length === 0 ? (
+              <div className="text-center py-8 text-secondary-500">
+                <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>No fields yet. Add fields to build your form.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {formData.formFields.map((field, index) => (
+                  <div
+                    key={field._id}
+                    className="glass-card p-4 border border-secondary-700/50"
+                  >
+                    <div className="flex items-start gap-2 mb-3">
+                      <div className="flex items-center gap-1 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => moveField(field._id, "up")}
+                          disabled={index === 0}
+                          className="p-1.5 text-secondary-400 hover:text-white disabled:opacity-30 rounded"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveField(field._id, "down")}
+                          disabled={index === formData.formFields.length - 1}
+                          className="p-1.5 text-secondary-400 hover:text-white disabled:opacity-30 rounded"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                      <GripVertical className="w-4 h-4 text-secondary-500 flex-shrink-0 mt-1" />
+                      <div className="flex-1 grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-secondary-400 mb-1">
+                            Field name
+                          </label>
+                          <input
+                            type="text"
+                            value={field.name}
+                            onChange={(e) =>
+                              updateField(field._id, {
+                                name: e.target.value,
+                              })
+                            }
+                            className="input-field text-sm"
+                            placeholder="e.g. full_name"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-secondary-400 mb-1">
+                            Label
+                          </label>
+                          <input
+                            type="text"
+                            value={field.label}
+                            onChange={(e) =>
+                              updateField(field._id, {
+                                label: e.target.value,
+                              })
+                            }
+                            className="input-field text-sm"
+                            placeholder="e.g. Full Name"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <label className="flex items-center gap-2 text-sm text-secondary-400">
+                          <input
+                            type="checkbox"
+                            checked={field.required}
+                            onChange={(e) =>
+                              updateField(field._id, {
+                                required: e.target.checked,
+                              })
+                            }
+                            className="w-4 h-4 rounded border-secondary-600 text-primary-500"
+                          />
+                          Required
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => removeField(field._id)}
+                          className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      <div>
+                        <label className="block text-xs font-medium text-secondary-400 mb-1">
+                          Type
+                        </label>
+                        <select
+                          value={field.type}
+                          onChange={(e) =>
+                            updateField(field._id, {
+                              type: e.target.value as FormFieldType,
+                            })
+                          }
+                          className="input-field text-sm"
+                        >
+                          {FIELD_TYPE_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-secondary-400 mb-1">
+                          Placeholder
+                        </label>
+                        <input
+                          type="text"
+                          value={field.placeholder || ""}
+                          onChange={(e) =>
+                            updateField(field._id, {
+                              placeholder: e.target.value,
+                            })
+                          }
+                          className="input-field text-sm"
+                          placeholder="Optional"
+                        />
+                      </div>
+                    </div>
+                    {field.type === "dropdown" && (
+                      <div className="mt-3">
+                        <label className="block text-xs font-medium text-secondary-400 mb-1">
+                          Options (one per line)
+                        </label>
+                        <textarea
+                          value={
+                            fieldOptionsText[field._id] ??
+                            field.options?.join("\n") ??
+                            ""
+                          }
+                          onChange={(e) => {
+                            const text = e.target.value;
+                            setFieldOptionsText((prev) => ({
+                              ...prev,
+                              [field._id]: text,
+                            }));
+                            const options = text
+                              .split("\n")
+                              .map((o) => o.trim())
+                              .filter(Boolean);
+                            updateField(field._id, { options });
+                          }}
+                          className="input-field text-sm min-h-[80px] resize-y"
+                          placeholder="Option 1&#10;Option 2"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "advanced" && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-white">CAPA Triggers</h3>
+            <p className="text-sm text-secondary-400">
+              Configure automatic CAPA creation based on field responses.
+            </p>
+            <div className="space-y-3">
+              {formData.capaTriggers.map((trigger, index) => (
+                <div
+                  key={index}
+                  className="glass-card p-4 flex items-center gap-3 flex-wrap"
+                >
+                  <select
+                    value={trigger.field}
+                    onChange={(e) => {
+                      const next = [...formData.capaTriggers];
+                      next[index] = { ...next[index], field: e.target.value };
+                      setFormData((prev) => ({
+                        ...prev,
+                        capaTriggers: next,
+                      }));
+                    }}
+                    className="input-field flex-1 min-w-[120px]"
+                  >
+                    <option value="">Select field</option>
+                    {formData.formFields.map((f) => (
+                      <option key={f.name} value={f.name}>
+                        {f.label || f.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={trigger.value}
+                    onChange={(e) => {
+                      const next = [...formData.capaTriggers];
+                      next[index] = { ...next[index], value: e.target.value };
+                      setFormData((prev) => ({
+                        ...prev,
+                        capaTriggers: next,
+                      }));
+                    }}
+                    className="input-field flex-1 min-w-[120px]"
+                    placeholder="Value that triggers CAPA"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        capaTriggers: prev.capaTriggers.filter(
+                          (_, i) => i !== index,
+                        ),
+                      }))
+                    }
+                    className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    capaTriggers: [
+                      ...prev.capaTriggers,
+                      { field: "", value: "" },
+                    ],
+                  }))
+                }
+                className="w-full py-3 rounded-lg border-2 border-dashed border-secondary-600 text-secondary-400 hover:border-primary-500/50 hover:text-primary-400 flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add CAPA Trigger
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </SlideInModal>
   );
 };
 
@@ -731,8 +736,16 @@ export const Forms: React.FC = () => {
               placeholder="Search by name or description..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-field pl-10"
+              className="input-field pl-10 pr-10"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-secondary-500 hover:text-white hover:bg-secondary-700 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </div>

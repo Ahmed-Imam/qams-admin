@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { SlideInModal } from "../components/SlideInModal";
+import { ConfirmationModal } from "../components/ConfirmationModal";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Accreditation } from "../api/accreditations";
@@ -150,6 +151,12 @@ export const Templates: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingTemplate, setEditingTemplate] =
     useState<OnboardingTemplate | null>(null);
+
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<{
+    id: string;
+  } | null>(null);
   const [commonForms, setCommonForms] = useState<Form[]>([]);
   const [commonIncidents, setCommonIncidents] = useState<Form[]>([]);
   const [commonChecklists, setCommonChecklists] = useState<CommonChecklist[]>(
@@ -365,10 +372,15 @@ export const Templates: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this template?")) return;
+  const openDeleteConfirm = (id: string) => {
+    setTemplateToDelete({ id });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!templateToDelete) return;
     try {
-      await templatesAPI.delete(id);
+      await templatesAPI.delete(templateToDelete.id);
       toast.success("Template deleted successfully");
       fetchData();
     } catch (error: any) {
@@ -405,7 +417,7 @@ export const Templates: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn min-h-[calc(100vh-5rem)]">
+    <div className="space-y-6 animate-fadeIn overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -432,8 +444,16 @@ export const Templates: React.FC = () => {
             placeholder="Search templates..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10"
+            className="input-field pl-10 pr-10"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-secondary-500 hover:text-white hover:bg-secondary-700 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
         <div className="relative">
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
@@ -459,10 +479,10 @@ export const Templates: React.FC = () => {
       </div>
 
       {/* Templates Table */}
-      <div className="glass-card overflow-hidden min-h-[400px]">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
+      <div className="flex-1 glass-card flex flex-col h-[calc(100vh-19rem)]">
+        <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar">
+          <table className="w-full relative">
+            <thead className="sticky top-0 z-10 bg-secondary-900/95 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
               <tr className="border-b border-secondary-700/50">
                 <th className="table-header">Template ID</th>
                 <th className="table-header max-w-xs">Name</th>
@@ -543,7 +563,7 @@ export const Templates: React.FC = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(template._id)}
+                        onClick={() => openDeleteConfirm(template._id)}
                         className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -564,7 +584,7 @@ export const Templates: React.FC = () => {
         </div>
 
         {/* Pagination Controls */}
-        <div className="p-4 border-t border-secondary-700/30 flex items-center justify-between">
+        <div className="p-4 border-t border-secondary-700/30 flex items-center justify-between shrink-0 bg-secondary-900/50">
           <p className="text-sm text-secondary-400">
             Showing{" "}
             <span className="font-medium text-white">
@@ -949,6 +969,17 @@ export const Templates: React.FC = () => {
           )}
         </form>
       </SlideInModal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Template"
+        message="Are you sure you want to delete this template? This action cannot be undone."
+        confirmText="Delete Template"
+        variant="danger"
+      />
     </div>
   );
 };
