@@ -17,11 +17,13 @@ import { toast } from "sonner";
 import { usersAPI } from "../api/users";
 import { rolesAPI } from "../api/roles";
 import { departmentsAPI } from "../api/departments";
+import { clientsAPI } from "../api/clients";
 import type {
   User,
   CreateUserDto,
   Role,
   Department,
+  Client,
   UserStatus,
 } from "../types";
 import clsx from "clsx";
@@ -39,9 +41,11 @@ export const Users: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [clientFilter, setClientFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
@@ -70,21 +74,24 @@ export const Users: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [usersRes, rolesRes, deptsRes] = await Promise.all([
+      const [usersRes, rolesRes, deptsRes, clientsRes] = await Promise.all([
         usersAPI.getAll({
           page,
           limit,
           search: searchQuery,
           status: statusFilter !== "all" ? statusFilter : undefined,
+          clientId: clientFilter !== "all" ? clientFilter : undefined,
         }),
         rolesAPI.getAll({ limit: 100 }),
         departmentsAPI.getAll({ limit: 100 }),
+        clientsAPI.getAll({ limit: 100 }),
       ]);
       setUsers(usersRes.data || []);
       setTotalPages(usersRes.totalPages || 1);
       setTotalUsers(usersRes.total || 0);
       setRoles(Array.isArray(rolesRes) ? rolesRes : rolesRes?.data || []);
       setDepartments(Array.isArray(deptsRes) ? deptsRes : deptsRes?.data || []);
+      setClients(Array.isArray(clientsRes) ? clientsRes : []);
     } catch (error) {
       toast.error("Failed to fetch data");
     } finally {
@@ -97,7 +104,7 @@ export const Users: React.FC = () => {
       fetchData();
     }, 300);
     return () => clearTimeout(timer);
-  }, [page, limit, searchQuery, statusFilter]);
+  }, [page, limit, searchQuery, statusFilter, clientFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,6 +285,27 @@ export const Users: React.FC = () => {
                 className="bg-secondary-800 capitalize"
               >
                 {status.charAt(0).toUpperCase() + status.slice(1)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="relative">
+          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
+          <select
+            value={clientFilter}
+            onChange={(e) => setClientFilter(e.target.value)}
+            className="input-field pl-10 pr-8 min-w-[150px]"
+          >
+            <option value="all" className="bg-secondary-800">
+              All Clients
+            </option>
+            {clients.map((client) => (
+              <option
+                key={client._id}
+                value={client._id}
+                className="bg-secondary-800"
+              >
+                {client.name}
               </option>
             ))}
           </select>
