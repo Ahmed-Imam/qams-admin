@@ -30,104 +30,8 @@ import type {
   Question,
 } from "../types";
 
-// Autocomplete component for facilityType and triggerIds
-interface AutocompleteInputProps {
-  value: string[];
-  onChange: (value: string[]) => void;
-  options: string[];
-  placeholder?: string;
-  label: string;
-}
-
-const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
-  value,
-  onChange,
-  options,
-  placeholder = "Type to search...",
-  label,
-}) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
-  const inputRef = React.useRef<HTMLInputElement>(null);
-
-  const filteredOptions = useMemo(() => {
-    if (!searchTerm) return options;
-    const term = searchTerm.toLowerCase();
-    return options.filter((opt) => opt.toLowerCase().includes(term));
-  }, [options, searchTerm]);
-
-  const handleSelect = (option: string) => {
-    if (!value.includes(option)) {
-      onChange([...value, option]);
-    }
-    setSearchTerm("");
-    setIsOpen(false);
-    inputRef.current?.blur();
-  };
-
-  const handleRemove = (option: string) => {
-    onChange(value.filter((v) => v !== option));
-  };
-
-  return (
-    <div className="relative">
-      <label className="block text-sm font-medium text-secondary-300 mb-2">
-        {label}
-      </label>
-      <div className="relative">
-        <input
-          ref={inputRef}
-          type="text"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setIsOpen(true);
-          }}
-          onFocus={() => setIsOpen(true)}
-          onBlur={() => setTimeout(() => setIsOpen(false), 200)}
-          className="input-field"
-          placeholder={placeholder}
-        />
-        {isOpen && filteredOptions.length > 0 && (
-          <div className="absolute z-50 w-full mt-1 bg-secondary-800 border border-secondary-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-            {filteredOptions
-              .filter((opt) => !value.includes(opt))
-              .slice(0, 10)
-              .map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => handleSelect(option)}
-                  className="w-full text-left px-4 py-2 hover:bg-secondary-700 text-white transition-colors"
-                >
-                  {option}
-                </button>
-              ))}
-          </div>
-        )}
-      </div>
-      {value.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-2">
-          {value.map((item) => (
-            <span
-              key={item}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-primary-500/20 text-primary-300 text-sm"
-            >
-              {item}
-              <button
-                type="button"
-                onClick={() => handleRemove(item)}
-                className="hover:text-primary-200"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+import { ModalSelectInput } from "../components/ModalSelectInput";
+import type { SelectOption } from "../components/MultiSelectModal";
 
 const templateTypes: Array<{ value: string; label: string }> = [
   { value: "document", label: "Document" },
@@ -181,17 +85,31 @@ export const Templates: React.FC = () => {
   });
 
   // Build autocomplete options from questions
-  const autocompleteOptions = useMemo(() => {
-    const options = new Set<string>();
+  const triggerOptions = useMemo(() => {
+    const optionsMap = new Map<string, SelectOption>();
     questions.forEach((q) => {
       // Add question ID
-      options.add(q.questionId);
+      if (!optionsMap.has(q.questionId)) {
+        optionsMap.set(q.questionId, {
+          value: q.questionId,
+          label: q.questionId,
+          description: `Question: ${q.questionTitle}`,
+        });
+      }
       // Add all option IDs
       q.options.forEach((opt) => {
-        options.add(opt.id);
+        if (!optionsMap.has(opt.id)) {
+          optionsMap.set(opt.id, {
+            value: opt.id,
+            label: `${opt.id} (${opt.label})`,
+            description: `Option for: ${q.questionTitle}`,
+          });
+        }
       });
     });
-    return Array.from(options).sort();
+    return Array.from(optionsMap.values()).sort((a, b) =>
+      a.value.localeCompare(b.value),
+    );
   }, [questions]);
 
   // Get accreditation options from API (accreditations without client)
@@ -951,7 +869,7 @@ export const Templates: React.FC = () => {
                   </div>
                 )}
 
-                <AutocompleteInput
+                <ModalSelectInput
                   value={formData.accreditation}
                   onChange={(value) =>
                     setFormData({ ...formData, accreditation: value })
@@ -961,25 +879,25 @@ export const Templates: React.FC = () => {
                   label="Accreditations *"
                 />
 
-                <AutocompleteInput
+                <ModalSelectInput
                   value={formData.facilityType || []}
                   onChange={(value) =>
                     setFormData({ ...formData, facilityType: value })
                   }
-                  options={autocompleteOptions.filter((opt) =>
-                    opt.startsWith("FT_"),
+                  options={triggerOptions.filter((opt) =>
+                    opt.value.startsWith("FT_"),
                   )}
-                  placeholder="Search Option IDs..."
+                  placeholder="Search Facility Types..."
                   label="Facility Types (optional)"
                 />
 
-                <AutocompleteInput
+                <ModalSelectInput
                   value={formData.triggerIds}
                   onChange={(value) =>
                     setFormData({ ...formData, triggerIds: value })
                   }
-                  options={autocompleteOptions}
-                  placeholder="Search Option IDs..."
+                  options={triggerOptions}
+                  placeholder="Search Trigger IDs..."
                   label="Trigger IDs *"
                 />
               </div>
