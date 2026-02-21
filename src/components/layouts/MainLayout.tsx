@@ -19,7 +19,7 @@ export const MainLayout: React.FC = () => {
       <main
         className={clsx(
           "transition-all duration-300 min-h-screen",
-          isCollapsed ? "ml-20" : "ml-64"
+          isCollapsed ? "ml-20" : "ml-64",
         )}
       >
         <div className="p-8">

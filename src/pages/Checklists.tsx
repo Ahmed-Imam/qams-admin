@@ -10,6 +10,8 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { SlideInModal } from "../components/SlideInModal";
+import { ConfirmationModal } from "../components/ConfirmationModal";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type {
@@ -58,16 +60,17 @@ const GRACE_PERIOD_OPTIONS = [
   { value: 60, label: "± 1 hr" },
 ];
 
-const ITEM_TYPES: { value: ChecklistItemType; label: string; icon: string }[] = [
-  { value: "checkbox", label: "Checkbox", icon: "☑️" },
-  { value: "text input", label: "Text", icon: "📝" },
-  { value: "long text", label: "Text Area", icon: "📄" },
-  { value: "number", label: "Number", icon: "🔢" },
-  { value: "temperature", label: "Temp", icon: "🌡️" },
-  { value: "date", label: "Date", icon: "📅" },
-  { value: "dropdown", label: "Dropdown", icon: "▼" },
-  { value: "time", label: "Time", icon: "🕐" },
-];
+const ITEM_TYPES: { value: ChecklistItemType; label: string; icon: string }[] =
+  [
+    { value: "checkbox", label: "Checkbox", icon: "☑️" },
+    { value: "text input", label: "Text", icon: "📝" },
+    { value: "long text", label: "Text Area", icon: "📄" },
+    { value: "number", label: "Number", icon: "🔢" },
+    { value: "temperature", label: "Temp", icon: "🌡️" },
+    { value: "date", label: "Date", icon: "📅" },
+    { value: "dropdown", label: "Dropdown", icon: "▼" },
+    { value: "time", label: "Time", icon: "🕐" },
+  ];
 
 const DAYS_OF_WEEK = [
   { value: 0, label: "Sun" },
@@ -157,22 +160,24 @@ const ChecklistModal: React.FC<ChecklistModalProps> = ({
 
   useEffect(() => {
     if (checklist && mode === "edit" && isOpen) {
-      const items: ChecklistItemForm[] = (checklist.items || []).map((item) => ({
-        ...item,
-        text: item.text || "",
-        type: (item.type as ChecklistItemType) || "checkbox",
-        required: item.required ?? true,
-        critical: item.critical ?? false,
-        triggersCapaOnFail: item.triggersCapaOnFail ?? false,
-        severityOnFail: (item.severityOnFail as SeverityLevel) || "medium",
-        minValue: item.inputConfiguration?.minValue,
-        maxValue: item.inputConfiguration?.maxValue,
-        unit: item.inputConfiguration?.unit,
-        options: item.inputConfiguration?.options,
-        failureValues: item.inputConfiguration?.failureValues,
-        failureMinValue: item.inputConfiguration?.failureMinValue,
-        failureMaxValue: item.inputConfiguration?.failureMaxValue,
-      }));
+      const items: ChecklistItemForm[] = (checklist.items || []).map(
+        (item) => ({
+          ...item,
+          text: item.text || "",
+          type: (item.type as ChecklistItemType) || "checkbox",
+          required: item.required ?? true,
+          critical: item.critical ?? false,
+          triggersCapaOnFail: item.triggersCapaOnFail ?? false,
+          severityOnFail: (item.severityOnFail as SeverityLevel) || "medium",
+          minValue: item.inputConfiguration?.minValue,
+          maxValue: item.inputConfiguration?.maxValue,
+          unit: item.inputConfiguration?.unit,
+          options: item.inputConfiguration?.options,
+          failureValues: item.inputConfiguration?.failureValues,
+          failureMinValue: item.inputConfiguration?.failureMinValue,
+          failureMaxValue: item.inputConfiguration?.failureMaxValue,
+        }),
+      );
       setFormData({
         name: checklist.name || "",
         code: checklist.code || "",
@@ -197,14 +202,18 @@ const ChecklistModal: React.FC<ChecklistModalProps> = ({
           : "",
         requiresCapaOnFail: checklist.requiresCapaOnFail ?? false,
         defaultSeverityOnFail: checklist.defaultSeverityOnFail || "medium",
-        items: items.length ? items : [{
-          text: "",
-          type: "checkbox",
-          required: true,
-          critical: false,
-          triggersCapaOnFail: false,
-          severityOnFail: "medium",
-        }],
+        items: items.length
+          ? items
+          : [
+              {
+                text: "",
+                type: "checkbox",
+                required: true,
+                critical: false,
+                triggersCapaOnFail: false,
+                severityOnFail: "medium",
+              },
+            ],
       });
     } else if (isOpen && mode === "create") {
       setFormData({
@@ -261,9 +270,16 @@ const ChecklistModal: React.FC<ChecklistModalProps> = ({
         occurrencesPerPeriod: formData.occurrencesPerPeriod,
         executionTimes: formData.executionTimes,
         gracePeriodMinutes: formData.gracePeriodMinutes,
-        daysOfWeek: formData.frequencyType === "weekly" ? formData.daysOfWeek : undefined,
-        daysOfMonth: formData.frequencyType === "monthly" ? formData.daysOfMonth : undefined,
-        monthsOfYear: formData.frequencyType === "yearly" ? formData.monthsOfYear : undefined,
+        daysOfWeek:
+          formData.frequencyType === "weekly" ? formData.daysOfWeek : undefined,
+        daysOfMonth:
+          formData.frequencyType === "monthly"
+            ? formData.daysOfMonth
+            : undefined,
+        monthsOfYear:
+          formData.frequencyType === "yearly"
+            ? formData.monthsOfYear
+            : undefined,
         startDate: new Date(formData.startDate).toISOString(),
         endDate:
           formData.hasEndDate && formData.endDate
@@ -279,7 +295,9 @@ const ChecklistModal: React.FC<ChecklistModalProps> = ({
           required: item.required ?? true,
           critical: item.critical ?? false,
           triggersCapaOnFail: item.triggersCapaOnFail ?? false,
-          severityOnFail: item.triggersCapaOnFail ? item.severityOnFail : undefined,
+          severityOnFail: item.triggersCapaOnFail
+            ? item.severityOnFail
+            : undefined,
           inputConfiguration:
             item.minValue !== undefined ||
             item.maxValue !== undefined ||
@@ -292,7 +310,8 @@ const ChecklistModal: React.FC<ChecklistModalProps> = ({
                   options: item.type === "dropdown" ? item.options : undefined,
                   allowComments: true,
                   requireCommentOnFailure: item.critical,
-                  alertOutOfRange: item.minValue !== undefined || item.maxValue !== undefined,
+                  alertOutOfRange:
+                    item.minValue !== undefined || item.maxValue !== undefined,
                   failureValues:
                     item.triggersCapaOnFail && item.type === "dropdown"
                       ? item.failureValues
@@ -372,12 +391,15 @@ const ChecklistModal: React.FC<ChecklistModalProps> = ({
         const newItems = [...prev.items];
         newItems[index] = { ...newItems[index], [field]: value };
         if (field === "type" && value === "dropdown") {
-          newItems[index].options = newItems[index].options || ["Option 1", "Option 2"];
+          newItems[index].options = newItems[index].options || [
+            "Option 1",
+            "Option 2",
+          ];
         }
         return { ...prev, items: newItems };
       });
     },
-    []
+    [],
   );
 
   const handleAddItem = useCallback(() => {
@@ -397,25 +419,35 @@ const ChecklistModal: React.FC<ChecklistModalProps> = ({
     }));
   }, []);
 
-  const handleRemoveItem = useCallback((index: number) => {
-    if (formData.items.length <= 1) return;
-    setFormData((prev) => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index),
-    }));
-  }, [formData.items.length]);
+  const handleRemoveItem = useCallback(
+    (index: number) => {
+      if (formData.items.length <= 1) return;
+      setFormData((prev) => ({
+        ...prev,
+        items: prev.items.filter((_, i) => i !== index),
+      }));
+    },
+    [formData.items.length],
+  );
 
-  const handleMoveItem = useCallback((index: number, direction: "up" | "down") => {
-    setFormData((prev) => {
-      const items = [...prev.items];
-      const newIndex = direction === "up" ? index - 1 : index + 1;
-      if (newIndex < 0 || newIndex >= items.length) return prev;
-      [items[index], items[newIndex]] = [items[newIndex], items[index]];
-      return { ...prev, items };
-    });
-  }, []);
+  const handleMoveItem = useCallback(
+    (index: number, direction: "up" | "down") => {
+      setFormData((prev) => {
+        const items = [...prev.items];
+        const newIndex = direction === "up" ? index - 1 : index + 1;
+        if (newIndex < 0 || newIndex >= items.length) return prev;
+        [items[index], items[newIndex]] = [items[newIndex], items[index]];
+        return { ...prev, items };
+      });
+    },
+    [],
+  );
 
-  const handleDropdownOptionChange = (itemIndex: number, optionIndex: number, value: string) => {
+  const handleDropdownOptionChange = (
+    itemIndex: number,
+    optionIndex: number,
+    value: string,
+  ) => {
     setFormData((prev) => {
       const newItems = [...prev.items];
       const opts = [...(newItems[itemIndex].options || [])];
@@ -429,19 +461,19 @@ const ChecklistModal: React.FC<ChecklistModalProps> = ({
     setFormData((prev) => {
       const newItems = [...prev.items];
       const opts = newItems[itemIndex].options || [];
-      newItems[itemIndex].options = [
-        ...opts,
-        `Option ${opts.length + 1}`,
-      ];
+      newItems[itemIndex].options = [...opts, `Option ${opts.length + 1}`];
       return { ...prev, items: newItems };
     });
   };
 
-  const handleRemoveDropdownOption = (itemIndex: number, optionIndex: number) => {
+  const handleRemoveDropdownOption = (
+    itemIndex: number,
+    optionIndex: number,
+  ) => {
     setFormData((prev) => {
       const newItems = [...prev.items];
       newItems[itemIndex].options = (newItems[itemIndex].options || []).filter(
-        (_, i) => i !== optionIndex
+        (_, i) => i !== optionIndex,
       );
       return { ...prev, items: newItems };
     });
@@ -461,564 +493,32 @@ const ChecklistModal: React.FC<ChecklistModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="glass-card w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-fadeIn my-8">
-        <div className="flex items-center justify-between p-6 border-b border-secondary-700/50 flex-shrink-0">
-          <h2 className="text-xl font-bold text-white">
-            {mode === "edit" ? "Edit Checklist" : "Add Common Checklist"}
-          </h2>
+    <SlideInModal
+      isOpen={isOpen}
+      onClose={() => {
+        setActiveTab("details");
+        onClose();
+      }}
+      title={mode === "edit" ? "Edit Checklist" : "Add Common Checklist"}
+      icon={ClipboardCheck}
+      iconColor={mode === "edit" ? "amber" : "primary"}
+      badges={[
+        {
+          label: mode === "edit" ? "Editing" : "New",
+          variant: mode === "edit" ? "primary" : "default",
+        },
+      ]}
+      size="lg"
+      footer={
+        <div className="flex gap-3 w-full">
           <button
             type="button"
             onClick={() => {
               setActiveTab("details");
               onClose();
             }}
-            className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
+            className="btn-secondary flex-1"
           >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="flex gap-1 p-4 pb-4 border-b border-secondary-700/30 flex-shrink-0">
-          {(["details", "checks"] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
-                  : "text-secondary-400 hover:text-white border border-transparent"
-              }`}
-            >
-              {tab === "details" ? "Details" : "Checks"}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {activeTab === "details" && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Name <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    className="input-field"
-                    placeholder="e.g. Daily Equipment Checklist"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Code
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.code}
-                    onChange={(e) => handleInputChange("code", e.target.value)}
-                    className="input-field"
-                    placeholder="CHK-001"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Description <span className="text-red-400">*</span>
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
-                  className="input-field min-h-[80px] resize-none"
-                  placeholder="Describe the purpose of this checklist"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Category
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) =>
-                      handleInputChange("category", e.target.value as ChecklistCategory | "")
-                    }
-                    className="input-field"
-                  >
-                    <option value="">Select (optional)</option>
-                    {CATEGORY_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Category details
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.categoryDetails}
-                    onChange={(e) => handleInputChange("categoryDetails", e.target.value)}
-                    className="input-field"
-                    placeholder="Optional"
-                  />
-                </div>
-              </div>
-
-              <div className="border-t border-secondary-700/50 pt-4">
-                <h3 className="text-sm font-medium text-white mb-3">Schedule</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-300 mb-2">
-                      Frequency
-                    </label>
-                    <select
-                      value={formData.frequencyType}
-                      onChange={(e) =>
-                        handleInputChange("frequencyType", e.target.value as ChecklistFrequency)
-                      }
-                      className="input-field"
-                    >
-                      {FREQUENCY_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-300 mb-2">
-                      Start date
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) => handleInputChange("startDate", e.target.value)}
-                      className="input-field"
-                    />
-                  </div>
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-secondary-300 mb-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.hasEndDate}
-                        onChange={(e) => {
-                          handleInputChange("hasEndDate", e.target.checked);
-                          if (!e.target.checked) handleInputChange("endDate", "");
-                        }}
-                        className="w-4 h-4 rounded border-secondary-600 text-primary-500"
-                      />
-                      End date
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.endDate}
-                      onChange={(e) => handleInputChange("endDate", e.target.value)}
-                      min={formData.startDate}
-                      disabled={!formData.hasEndDate}
-                      className="input-field disabled:opacity-50"
-                    />
-                  </div>
-                </div>
-                {formData.frequencyType === "weekly" && (
-                  <div className="mt-3">
-                    <label className="block text-sm font-medium text-secondary-300 mb-2">
-                      Days of week
-                    </label>
-                    <div className="flex gap-1 flex-wrap">
-                      {DAYS_OF_WEEK.map((day) => (
-                        <button
-                          key={day.value}
-                          type="button"
-                          onClick={() => handleDayOfWeekToggle(day.value)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-                            formData.daysOfWeek.includes(day.value)
-                              ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
-                              : "border border-secondary-600 text-secondary-400 hover:text-white"
-                          }`}
-                        >
-                          {day.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {formData.frequencyType === "monthly" && (
-                  <div className="mt-3">
-                    <label className="block text-sm font-medium text-secondary-300 mb-2">
-                      Days of month (1–31, comma-separated)
-                    </label>
-                    <input
-                      type="text"
-                      value={(formData.daysOfMonth || []).join(", ")}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/\s/g, "");
-                        const nums = raw
-                          ? raw
-                              .split(",")
-                              .map((s) => parseInt(s, 10))
-                              .filter((n) => !isNaN(n) && n >= 1 && n <= 31) : [];
-                        handleInputChange("daysOfMonth", nums);
-                      }}
-                      className="input-field"
-                      placeholder="e.g. 1, 15"
-                    />
-                  </div>
-                )}
-                {formData.frequencyType === "yearly" && (
-                  <div className="mt-3">
-                    <label className="block text-sm font-medium text-secondary-300 mb-2">
-                      Months (1–12, comma-separated)
-                    </label>
-                    <input
-                      type="text"
-                      value={(formData.monthsOfYear || []).join(", ")}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/\s/g, "");
-                        const nums = raw
-                          ? raw
-                              .split(",")
-                              .map((s) => parseInt(s, 10))
-                              .filter((n) => !isNaN(n) && n >= 1 && n <= 12) : [];
-                        handleInputChange("monthsOfYear", nums);
-                      }}
-                      className="input-field"
-                      placeholder="e.g. 1, 7"
-                    />
-                  </div>
-                )}
-                <div className="mt-3">
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Execution times ({formData.executionTimes.length}x per {formData.frequencyType})
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.executionTimes.map((time, i) => (
-                      <div key={i} className="flex items-center gap-1">
-                        <input
-                          type="time"
-                          value={time}
-                          onChange={(e) => handleTimeChange(i, e.target.value)}
-                          className="input-field text-sm w-auto"
-                        />
-                        {formData.executionTimes.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveTime(i)}
-                            className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={handleAddTime}
-                      className="px-3 py-2 rounded-lg border border-dashed border-secondary-600 text-secondary-400 hover:text-primary-400 hover:border-primary-500/50 text-sm"
-                    >
-                      <Plus className="w-4 h-4 inline mr-1" />
-                      Add
-                    </button>
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Grace period
-                  </label>
-                  <div className="flex gap-1 flex-wrap">
-                    {GRACE_PERIOD_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => handleInputChange("gracePeriodMinutes", opt.value)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-                          formData.gracePeriodMinutes === opt.value
-                            ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
-                            : "border border-secondary-600 text-secondary-400 hover:text-white"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary-800/50 border border-secondary-700/50">
-                <input
-                  type="checkbox"
-                  id="requiresCapaOnFail"
-                  checked={formData.requiresCapaOnFail}
-                  onChange={(e) =>
-                    handleInputChange("requiresCapaOnFail", e.target.checked)
-                  }
-                  className="w-4 h-4 rounded border-secondary-600 text-primary-500 focus:ring-primary-500"
-                />
-                <label
-                  htmlFor="requiresCapaOnFail"
-                  className="text-sm font-medium text-secondary-300 cursor-pointer flex-1"
-                >
-                  Require CAPA if checklist fails overall
-                </label>
-                {formData.requiresCapaOnFail && (
-                  <select
-                    value={formData.defaultSeverityOnFail}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "defaultSeverityOnFail",
-                        e.target.value as SeverityLevel
-                      )
-                    }
-                    className="input-field w-28"
-                  >
-                    {SEVERITY_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </>
-          )}
-
-          {activeTab === "checks" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-white">Check items</h3>
-                <button
-                  type="button"
-                  onClick={handleAddItem}
-                  className="btn-primary flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add item
-                </button>
-              </div>
-              {formData.items.map((item, index) => (
-                <div
-                  key={index}
-                  className="glass-card p-4 border border-secondary-700/50 space-y-3"
-                >
-                  <div className="flex items-start gap-2">
-                    <div className="flex flex-col gap-0.5">
-                      <button
-                        type="button"
-                        onClick={() => handleMoveItem(index, "up")}
-                        disabled={index === 0}
-                        className="p-1.5 text-secondary-400 hover:text-white disabled:opacity-30 rounded"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMoveItem(index, "down")}
-                        disabled={index === formData.items.length - 1}
-                        className="p-1.5 text-secondary-400 hover:text-white disabled:opacity-30 rounded"
-                      >
-                        ↓
-                      </button>
-                    </div>
-                    <GripVertical className="w-4 h-4 text-secondary-500 flex-shrink-0 mt-1" />
-                    <div className="flex-1 min-w-0">
-                      <input
-                        type="text"
-                        value={item.text}
-                        onChange={(e) => handleItemChange(index, "text", e.target.value)}
-                        className="input-field mb-2"
-                        placeholder="Check description *"
-                      />
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {ITEM_TYPES.map((t) => (
-                          <button
-                            key={t.value}
-                            type="button"
-                            onClick={() => handleItemChange(index, "type", t.value)}
-                            className={`px-2 py-1 rounded text-xs font-medium ${
-                              item.type === t.value
-                                ? "bg-primary-500/30 text-primary-300"
-                                : "text-secondary-400 hover:text-white border border-secondary-600"
-                            }`}
-                          >
-                            {t.icon} {t.label}
-                          </button>
-                        ))}
-                      </div>
-                      {(item.type === "number" || item.type === "temperature") && (
-                        <div className="flex gap-2 flex-wrap mb-2">
-                          <input
-                            type="number"
-                            value={item.minValue ?? ""}
-                            onChange={(e) =>
-                              handleItemChange(
-                                index,
-                                "minValue",
-                                e.target.value ? parseFloat(e.target.value) : undefined
-                              )
-                            }
-                            className="input-field w-20 text-sm"
-                            placeholder="Min"
-                          />
-                          <input
-                            type="number"
-                            value={item.maxValue ?? ""}
-                            onChange={(e) =>
-                              handleItemChange(
-                                index,
-                                "maxValue",
-                                e.target.value ? parseFloat(e.target.value) : undefined
-                              )
-                            }
-                            className="input-field w-20 text-sm"
-                            placeholder="Max"
-                          />
-                          <input
-                            type="text"
-                            value={item.unit ?? ""}
-                            onChange={(e) => handleItemChange(index, "unit", e.target.value)}
-                            className="input-field w-16 text-sm"
-                            placeholder={item.type === "temperature" ? "°C" : "Unit"}
-                          />
-                        </div>
-                      )}
-                      {item.type === "dropdown" && (
-                        <div className="flex flex-wrap gap-1 items-center mb-2">
-                          {(item.options || []).map((opt, oi) => (
-                            <div
-                              key={oi}
-                              className="flex items-center gap-1 bg-secondary-800 rounded px-2 py-1"
-                            >
-                              <input
-                                type="text"
-                                value={opt}
-                                onChange={(e) =>
-                                  handleDropdownOptionChange(index, oi, e.target.value)
-                                }
-                                className="input-field text-xs w-24 bg-transparent border-0 p-0"
-                              />
-                              {(item.options?.length ?? 0) > 2 && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveDropdownOption(index, oi)}
-                                  className="text-secondary-400 hover:text-red-400"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                          <button
-                            type="button"
-                            onClick={() => handleAddDropdownOption(index)}
-                            className="text-primary-400 text-xs hover:underline"
-                          >
-                            + Add option
-                          </button>
-                        </div>
-                      )}
-                      <div className="flex flex-wrap gap-4 text-sm">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={item.required}
-                            onChange={(e) =>
-                              handleItemChange(index, "required", e.target.checked)
-                            }
-                            className="w-4 h-4 rounded border-secondary-600 text-primary-500"
-                          />
-                          Required
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={item.critical}
-                            onChange={(e) =>
-                              handleItemChange(index, "critical", e.target.checked)
-                            }
-                            className="w-4 h-4 rounded border-secondary-600 text-primary-500"
-                          />
-                          Critical
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={item.triggersCapaOnFail}
-                            onChange={(e) =>
-                              handleItemChange(index, "triggersCapaOnFail", e.target.checked)
-                            }
-                            className="w-4 h-4 rounded border-secondary-600 text-primary-500"
-                          />
-                          CAPA on fail
-                        </label>
-                        {item.triggersCapaOnFail && (
-                          <select
-                            value={item.severityOnFail}
-                            onChange={(e) =>
-                              handleItemChange(
-                                index,
-                                "severityOnFail",
-                                e.target.value as SeverityLevel
-                              )
-                            }
-                            className="input-field text-sm w-24"
-                          >
-                            {SEVERITY_OPTIONS.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
-                      {item.triggersCapaOnFail &&
-                        item.type === "dropdown" &&
-                        (item.options?.length ?? 0) > 0 && (
-                          <div className="mt-2 p-2 rounded bg-amber-500/10 border border-amber-500/30">
-                            <span className="text-xs text-amber-400 font-medium">
-                              Trigger CAPA for:
-                            </span>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {item.options!.map((opt) => (
-                                <button
-                                  key={opt}
-                                  type="button"
-                                  onClick={() => handleToggleFailureValue(index, opt)}
-                                  className={`px-2 py-0.5 rounded text-xs ${
-                                    item.failureValues?.includes(opt)
-                                      ? "bg-amber-500/30 text-amber-200"
-                                      : "border border-amber-500/50 text-secondary-400 hover:text-white"
-                                  }`}
-                                >
-                                  {opt}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                    </div>
-                    {formData.items.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveItem(index)}
-                        className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-3 p-6 border-t border-secondary-700/50 flex-shrink-0">
-          <button type="button" onClick={onClose} className="btn-secondary flex-1">
             Cancel
           </button>
           <button
@@ -1031,8 +531,598 @@ const ChecklistModal: React.FC<ChecklistModalProps> = ({
             {mode === "edit" ? "Update" : "Create"}
           </button>
         </div>
+      }
+    >
+      <div className="flex gap-1 pb-4 border-b border-secondary-700/30 mb-6 shrink-0">
+        {(["details", "checks"] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === tab
+                ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
+                : "text-secondary-400 hover:text-white border border-transparent hover:bg-secondary-700/30"
+            }`}
+          >
+            {tab === "details" ? "Details" : "Checks"}
+          </button>
+        ))}
       </div>
-    </div>
+
+      <div className="space-y-4">
+        {activeTab === "details" && (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Name <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  className="input-field"
+                  placeholder="e.g. Daily Equipment Checklist"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Code
+                </label>
+                <input
+                  type="text"
+                  value={formData.code}
+                  onChange={(e) => handleInputChange("code", e.target.value)}
+                  className="input-field"
+                  placeholder="CHK-001"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-secondary-300 mb-2">
+                Description <span className="text-red-400">*</span>
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) =>
+                  handleInputChange("description", e.target.value)
+                }
+                className="input-field min-h-[80px] resize-none"
+                placeholder="Describe the purpose of this checklist"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Category
+                </label>
+                <select
+                  value={formData.category}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "category",
+                      e.target.value as ChecklistCategory | "",
+                    )
+                  }
+                  className="input-field"
+                >
+                  <option value="">Select (optional)</option>
+                  {CATEGORY_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Category details
+                </label>
+                <input
+                  type="text"
+                  value={formData.categoryDetails}
+                  onChange={(e) =>
+                    handleInputChange("categoryDetails", e.target.value)
+                  }
+                  className="input-field"
+                  placeholder="Optional"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-secondary-700/50 pt-4">
+              <h3 className="text-sm font-medium text-white mb-3">Schedule</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-secondary-300 mb-2">
+                    Frequency
+                  </label>
+                  <select
+                    value={formData.frequencyType}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "frequencyType",
+                        e.target.value as ChecklistFrequency,
+                      )
+                    }
+                    className="input-field"
+                  >
+                    {FREQUENCY_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary-300 mb-2">
+                    Start date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) =>
+                      handleInputChange("startDate", e.target.value)
+                    }
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-secondary-300 mb-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.hasEndDate}
+                      onChange={(e) => {
+                        handleInputChange("hasEndDate", e.target.checked);
+                        if (!e.target.checked) handleInputChange("endDate", "");
+                      }}
+                      className="w-4 h-4 rounded border-secondary-600 text-primary-500"
+                    />
+                    End date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) =>
+                      handleInputChange("endDate", e.target.value)
+                    }
+                    min={formData.startDate}
+                    disabled={!formData.hasEndDate}
+                    className="input-field disabled:opacity-50"
+                  />
+                </div>
+              </div>
+              {formData.frequencyType === "weekly" && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-secondary-300 mb-2">
+                    Days of week
+                  </label>
+                  <div className="flex gap-1 flex-wrap">
+                    {DAYS_OF_WEEK.map((day) => (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => handleDayOfWeekToggle(day.value)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
+                          formData.daysOfWeek.includes(day.value)
+                            ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
+                            : "border border-secondary-600 text-secondary-400 hover:text-white"
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {formData.frequencyType === "monthly" && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-secondary-300 mb-2">
+                    Days of month (1–31, comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={(formData.daysOfMonth || []).join(", ")}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\s/g, "");
+                      const nums = raw
+                        ? raw
+                            .split(",")
+                            .map((s) => parseInt(s, 10))
+                            .filter((n) => !isNaN(n) && n >= 1 && n <= 31)
+                        : [];
+                      handleInputChange("daysOfMonth", nums);
+                    }}
+                    className="input-field"
+                    placeholder="e.g. 1, 15"
+                  />
+                </div>
+              )}
+              {formData.frequencyType === "yearly" && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-secondary-300 mb-2">
+                    Months (1–12, comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={(formData.monthsOfYear || []).join(", ")}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\s/g, "");
+                      const nums = raw
+                        ? raw
+                            .split(",")
+                            .map((s) => parseInt(s, 10))
+                            .filter((n) => !isNaN(n) && n >= 1 && n <= 12)
+                        : [];
+                      handleInputChange("monthsOfYear", nums);
+                    }}
+                    className="input-field"
+                    placeholder="e.g. 1, 7"
+                  />
+                </div>
+              )}
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Execution times ({formData.executionTimes.length}x per{" "}
+                  {formData.frequencyType})
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {formData.executionTimes.map((time, i) => (
+                    <div key={i} className="flex items-center gap-1">
+                      <input
+                        type="time"
+                        value={time}
+                        onChange={(e) => handleTimeChange(i, e.target.value)}
+                        className="input-field text-sm w-auto"
+                      />
+                      {formData.executionTimes.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTime(i)}
+                          className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handleAddTime}
+                    className="px-3 py-2 rounded-lg border border-dashed border-secondary-600 text-secondary-400 hover:text-primary-400 hover:border-primary-500/50 text-sm"
+                  >
+                    <Plus className="w-4 h-4 inline mr-1" />
+                    Add
+                  </button>
+                </div>
+              </div>
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Grace period
+                </label>
+                <div className="flex gap-1 flex-wrap">
+                  {GRACE_PERIOD_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() =>
+                        handleInputChange("gracePeriodMinutes", opt.value)
+                      }
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
+                        formData.gracePeriodMinutes === opt.value
+                          ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
+                          : "border border-secondary-600 text-secondary-400 hover:text-white"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary-800/50 border border-secondary-700/50">
+              <input
+                type="checkbox"
+                id="requiresCapaOnFail"
+                checked={formData.requiresCapaOnFail}
+                onChange={(e) =>
+                  handleInputChange("requiresCapaOnFail", e.target.checked)
+                }
+                className="w-4 h-4 rounded border-secondary-600 text-primary-500 focus:ring-primary-500"
+              />
+              <label
+                htmlFor="requiresCapaOnFail"
+                className="text-sm font-medium text-secondary-300 cursor-pointer flex-1"
+              >
+                Require CAPA if checklist fails overall
+              </label>
+              {formData.requiresCapaOnFail && (
+                <select
+                  value={formData.defaultSeverityOnFail}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "defaultSeverityOnFail",
+                      e.target.value as SeverityLevel,
+                    )
+                  }
+                  className="input-field w-28"
+                >
+                  {SEVERITY_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </>
+        )}
+
+        {activeTab === "checks" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-white">Check items</h3>
+              <button
+                type="button"
+                onClick={handleAddItem}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add item
+              </button>
+            </div>
+            {formData.items.map((item, index) => (
+              <div
+                key={index}
+                className="glass-card p-4 border border-secondary-700/50 space-y-3"
+              >
+                <div className="flex items-start gap-2">
+                  <div className="flex flex-col gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => handleMoveItem(index, "up")}
+                      disabled={index === 0}
+                      className="p-1.5 text-secondary-400 hover:text-white disabled:opacity-30 rounded"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleMoveItem(index, "down")}
+                      disabled={index === formData.items.length - 1}
+                      className="p-1.5 text-secondary-400 hover:text-white disabled:opacity-30 rounded"
+                    >
+                      ↓
+                    </button>
+                  </div>
+                  <GripVertical className="w-4 h-4 text-secondary-500 flex-shrink-0 mt-1" />
+                  <div className="flex-1 min-w-0">
+                    <input
+                      type="text"
+                      value={item.text}
+                      onChange={(e) =>
+                        handleItemChange(index, "text", e.target.value)
+                      }
+                      className="input-field mb-2"
+                      placeholder="Check description *"
+                    />
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {ITEM_TYPES.map((t) => (
+                        <button
+                          key={t.value}
+                          type="button"
+                          onClick={() =>
+                            handleItemChange(index, "type", t.value)
+                          }
+                          className={`px-2 py-1 rounded text-xs font-medium ${
+                            item.type === t.value
+                              ? "bg-primary-500/30 text-primary-300"
+                              : "text-secondary-400 hover:text-white border border-secondary-600"
+                          }`}
+                        >
+                          {t.icon} {t.label}
+                        </button>
+                      ))}
+                    </div>
+                    {(item.type === "number" ||
+                      item.type === "temperature") && (
+                      <div className="flex gap-2 flex-wrap mb-2">
+                        <input
+                          type="number"
+                          value={item.minValue ?? ""}
+                          onChange={(e) =>
+                            handleItemChange(
+                              index,
+                              "minValue",
+                              e.target.value
+                                ? parseFloat(e.target.value)
+                                : undefined,
+                            )
+                          }
+                          className="input-field w-20 text-sm"
+                          placeholder="Min"
+                        />
+                        <input
+                          type="number"
+                          value={item.maxValue ?? ""}
+                          onChange={(e) =>
+                            handleItemChange(
+                              index,
+                              "maxValue",
+                              e.target.value
+                                ? parseFloat(e.target.value)
+                                : undefined,
+                            )
+                          }
+                          className="input-field w-20 text-sm"
+                          placeholder="Max"
+                        />
+                        <input
+                          type="text"
+                          value={item.unit ?? ""}
+                          onChange={(e) =>
+                            handleItemChange(index, "unit", e.target.value)
+                          }
+                          className="input-field w-16 text-sm"
+                          placeholder={
+                            item.type === "temperature" ? "°C" : "Unit"
+                          }
+                        />
+                      </div>
+                    )}
+                    {item.type === "dropdown" && (
+                      <div className="flex flex-wrap gap-1 items-center mb-2">
+                        {(item.options || []).map((opt, oi) => (
+                          <div
+                            key={oi}
+                            className="flex items-center gap-1 bg-secondary-800 rounded px-2 py-1"
+                          >
+                            <input
+                              type="text"
+                              value={opt}
+                              onChange={(e) =>
+                                handleDropdownOptionChange(
+                                  index,
+                                  oi,
+                                  e.target.value,
+                                )
+                              }
+                              className="input-field text-xs w-24 bg-transparent border-0 p-0"
+                            />
+                            {(item.options?.length ?? 0) > 2 && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleRemoveDropdownOption(index, oi)
+                                }
+                                className="text-secondary-400 hover:text-red-400"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => handleAddDropdownOption(index)}
+                          className="text-primary-400 text-xs hover:underline"
+                        >
+                          + Add option
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-4 text-sm">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={item.required}
+                          onChange={(e) =>
+                            handleItemChange(
+                              index,
+                              "required",
+                              e.target.checked,
+                            )
+                          }
+                          className="w-4 h-4 rounded border-secondary-600 text-primary-500"
+                        />
+                        Required
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={item.critical}
+                          onChange={(e) =>
+                            handleItemChange(
+                              index,
+                              "critical",
+                              e.target.checked,
+                            )
+                          }
+                          className="w-4 h-4 rounded border-secondary-600 text-primary-500"
+                        />
+                        Critical
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={item.triggersCapaOnFail}
+                          onChange={(e) =>
+                            handleItemChange(
+                              index,
+                              "triggersCapaOnFail",
+                              e.target.checked,
+                            )
+                          }
+                          className="w-4 h-4 rounded border-secondary-600 text-primary-500"
+                        />
+                        CAPA on fail
+                      </label>
+                      {item.triggersCapaOnFail && (
+                        <select
+                          value={item.severityOnFail}
+                          onChange={(e) =>
+                            handleItemChange(
+                              index,
+                              "severityOnFail",
+                              e.target.value as SeverityLevel,
+                            )
+                          }
+                          className="input-field text-sm w-24"
+                        >
+                          {SEVERITY_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                    {item.triggersCapaOnFail &&
+                      item.type === "dropdown" &&
+                      (item.options?.length ?? 0) > 0 && (
+                        <div className="mt-2 p-2 rounded bg-amber-500/10 border border-amber-500/30">
+                          <span className="text-xs text-amber-400 font-medium">
+                            Trigger CAPA for:
+                          </span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {item.options!.map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() =>
+                                  handleToggleFailureValue(index, opt)
+                                }
+                                className={`px-2 py-0.5 rounded text-xs ${
+                                  item.failureValues?.includes(opt)
+                                    ? "bg-amber-500/30 text-amber-200"
+                                    : "border border-amber-500/50 text-secondary-400 hover:text-white"
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                  </div>
+                  {formData.items.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveItem(index)}
+                      className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </SlideInModal>
   );
 };
 
@@ -1046,9 +1136,15 @@ export const Checklists: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [showModal, setShowModal] = useState(false);
-  const [editingChecklist, setEditingChecklist] = useState<CommonChecklist | null>(null);
+  const [editingChecklist, setEditingChecklist] =
+    useState<CommonChecklist | null>(null);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const prevSearchRef = React.useRef(searchQuery);
+
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [checklistToDelete, setChecklistToDelete] =
+    useState<CommonChecklist | null>(null);
 
   const fetchPage = useCallback(async (pageNum: number, search: string) => {
     setLoading(true);
@@ -1109,10 +1205,15 @@ export const Checklists: React.FC = () => {
     }
   };
 
-  const handleDelete = async (checklist: CommonChecklist) => {
-    if (!confirm(`Delete "${checklist.name}"?`)) return;
+  const openDeleteConfirm = (checklist: CommonChecklist) => {
+    setChecklistToDelete(checklist);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!checklistToDelete) return;
     try {
-      await checklistV2API.delete(checklist._id);
+      await checklistV2API.delete(checklistToDelete._id);
       toast.success("Checklist deleted");
       fetchAll();
     } catch (error: unknown) {
@@ -1140,18 +1241,23 @@ export const Checklists: React.FC = () => {
     <div className="flex flex-col min-h-[calc(100vh-4rem)] space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-shrink-0">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Common Checklists</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Common Checklists
+          </h1>
           <p className="text-secondary-400">
             Manage common checklists (not tied to any client)
           </p>
         </div>
-        <button onClick={handleAdd} className="btn-primary flex items-center gap-2">
+        <button
+          onClick={handleAdd}
+          className="btn-primary flex items-center gap-2"
+        >
           <Plus className="w-5 h-5" />
           Add Checklist
         </button>
       </div>
 
-      <div className="flex-1 glass-card p-4 flex-shrink-0">
+      <div className=" glass-card p-4 flex-shrink-0">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
           <input
@@ -1159,8 +1265,16 @@ export const Checklists: React.FC = () => {
             placeholder="Search by name, code or description..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10"
+            className="input-field pl-10 pr-10"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-secondary-500 hover:text-white hover:bg-secondary-700 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -1186,14 +1300,16 @@ export const Checklists: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDelete(checklist)}
+                    onClick={() => openDeleteConfirm(checklist)}
                     className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">{checklist.name}</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                {checklist.name}
+              </h3>
               {checklist.description && (
                 <p className="text-sm text-secondary-400 line-clamp-2 mb-3">
                   {checklist.description}
@@ -1209,7 +1325,10 @@ export const Checklists: React.FC = () => {
                   </span>
                 )}
                 {checklist.createdAt && (
-                  <p>Created: {new Date(checklist.createdAt).toLocaleDateString()}</p>
+                  <p>
+                    Created:{" "}
+                    {new Date(checklist.createdAt).toLocaleDateString()}
+                  </p>
                 )}
               </div>
             </div>
@@ -1260,6 +1379,15 @@ export const Checklists: React.FC = () => {
         checklist={editingChecklist}
         mode={modalMode}
         onSuccess={fetchAll}
+      />
+      <ConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Checklist"
+        message={`Are you sure you want to delete "${checklistToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete Checklist"
+        variant="danger"
       />
     </div>
   );

@@ -9,6 +9,7 @@ import {
   Search,
   X,
 } from "lucide-react";
+import { SlideInModal } from "../components/SlideInModal";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -147,7 +148,7 @@ export const ActivityLogs: React.FC = () => {
       } catch (error: any) {
         if (!isCancelled) {
           toast.error(
-            error?.response?.data?.message || "Failed to search users"
+            error?.response?.data?.message || "Failed to search users",
           );
           setUserSuggestions([]);
         }
@@ -276,15 +277,10 @@ export const ActivityLogs: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="glass-card p-4 space-y-4">
-        <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-secondary-400" />
-          <h2 className="text-lg font-semibold text-white">Filters</h2>
-        </div>
-
+      <div className="glass-card p-3">
         {/* Error Message */}
         {error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+          <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl mb-3">
             <div className="flex items-start gap-3">
               <div className="flex-1">
                 <h3 className="text-sm font-medium text-red-400">
@@ -302,161 +298,184 @@ export const ActivityLogs: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {/* User Search */}
-          <div className="relative" ref={userSearchRef}>
-            {selectedUser ? (
-              <div className="relative w-full h-[42px] px-3 bg-primary-500/10 border border-primary-500/30 rounded-xl flex items-center">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
-                    {selectedUser.firstName?.[0] ||
-                      selectedUser.email?.[0] ||
-                      "U"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-primary-400 truncate">
-                      {selectedUser.firstName} {selectedUser.lastName}
+        <div className="flex flex-col xl:flex-row gap-3">
+          <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2">
+            {/* User Search */}
+            <div className="relative" ref={userSearchRef}>
+              {selectedUser ? (
+                <div className="relative w-full h-[38px] px-3 bg-primary-500/10 border border-primary-500/30 rounded-xl flex items-center">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
+                      {selectedUser.firstName?.[0] ||
+                        selectedUser.email?.[0] ||
+                        "U"}
                     </div>
-                  </div>
-                  <button
-                    onClick={handleClearUser}
-                    className="flex-shrink-0 text-primary-400 hover:text-primary-300 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 w-4 h-4" />
-                <input
-                  type="text"
-                  value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
-                  onFocus={() => {
-                    if (
-                      userSearch.trim().length >= 2 &&
-                      userSuggestions.length === 0 &&
-                      !isSearchingUsers
-                    ) {
-                      const query = userSearch.trim();
-                      if (query.length >= 2) {
-                        usersAPI
-                          .getAll({ page: 1, limit: 10, search: query })
-                          .then((res) => {
-                            setUserSuggestions(res.data || []);
-                          });
-                      }
-                    }
-                  }}
-                  placeholder="Search user..."
-                  className="input-field pl-10"
-                />
-              </div>
-            )}
-            {(isSearchingUsers || userSuggestions.length > 0) &&
-              !selectedUser && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-secondary-800 border border-secondary-700/50 rounded-xl shadow-xl z-50 max-h-60 overflow-auto">
-                  {isSearchingUsers && (
-                    <div className="px-3 py-2 text-sm text-secondary-400">
-                      Searching...
-                    </div>
-                  )}
-                  {!isSearchingUsers &&
-                    userSuggestions.length === 0 &&
-                    userSearch.trim().length >= 2 && (
-                      <div className="px-3 py-2 text-sm text-secondary-400">
-                        No users found
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-primary-400 truncate">
+                        {selectedUser.firstName} {selectedUser.lastName}
                       </div>
-                    )}
-                  {!isSearchingUsers &&
-                    userSuggestions.map((user) => (
-                      <button
-                        key={user._id}
-                        type="button"
-                        onClick={() => handleUserSelect(user)}
-                        className="w-full text-left px-3 py-2 hover:bg-secondary-700/50 flex items-center gap-3 transition-colors"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-xs font-semibold text-white">
-                          {user.firstName?.[0] || user.email?.[0] || "U"}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-white truncate">
-                            {user.firstName} {user.lastName}
-                          </div>
-                          <div className="text-xs text-secondary-400 truncate">
-                            {user.email}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
+                    </div>
+                    <button
+                      onClick={handleClearUser}
+                      className="flex-shrink-0 text-primary-400 hover:text-primary-300 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    onFocus={() => {
+                      if (
+                        userSearch.trim().length >= 2 &&
+                        userSuggestions.length === 0 &&
+                        !isSearchingUsers
+                      ) {
+                        const query = userSearch.trim();
+                        if (query.length >= 2) {
+                          usersAPI
+                            .getAll({ page: 1, limit: 10, search: query })
+                            .then((res) => {
+                              setUserSuggestions(res.data || []);
+                            });
+                        }
+                      }
+                    }}
+                    placeholder="Search user..."
+                    className="input-field !py-2 !h-[38px] !text-sm !pl-9 !pr-8"
+                  />
+                  {userSearch && (
+                    <button
+                      onClick={() => {
+                        setUserSearch("");
+                        setUserSuggestions([]);
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-secondary-400 hover:text-white transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               )}
+              {(isSearchingUsers || userSuggestions.length > 0) &&
+                !selectedUser && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-secondary-800 border border-secondary-700/50 rounded-xl shadow-xl z-50 max-h-60 overflow-auto">
+                    {isSearchingUsers && (
+                      <div className="px-3 py-2 text-sm text-secondary-400">
+                        Searching...
+                      </div>
+                    )}
+                    {!isSearchingUsers &&
+                      userSuggestions.length === 0 &&
+                      userSearch.trim().length >= 2 && (
+                        <div className="px-3 py-2 text-sm text-secondary-400">
+                          No users found
+                        </div>
+                      )}
+                    {!isSearchingUsers &&
+                      userSuggestions.map((user) => (
+                        <button
+                          key={user._id}
+                          type="button"
+                          onClick={() => handleUserSelect(user)}
+                          className="w-full text-left px-3 py-2 hover:bg-secondary-700/50 flex items-center gap-3 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-xs font-semibold text-white">
+                            {user.firstName?.[0] || user.email?.[0] || "U"}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-white truncate">
+                              {user.firstName} {user.lastName}
+                            </div>
+                            <div className="text-xs text-secondary-400 truncate">
+                              {user.email}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                )}
+            </div>
+
+            <select
+              value={entityFilter}
+              onChange={(e) => setEntityFilter(e.target.value)}
+              className="input-field !py-2 !h-[38px] !text-sm"
+            >
+              {ENTITY_OPTIONS.map((option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                  className="bg-secondary-800"
+                >
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={operationFilter}
+              onChange={(e) => setOperationFilter(e.target.value)}
+              className="input-field !py-2 !h-[38px] !text-sm"
+            >
+              {OPERATION_OPTIONS.map((option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                  className="bg-secondary-800"
+                >
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            <div className="relative">
+              <input
+                type="text"
+                value={entityNameFilter}
+                onChange={(e) => setEntityNameFilter(e.target.value)}
+                placeholder="Entity name..."
+                className="input-field !py-2 !h-[38px] !text-sm !pr-8"
+              />
+              {entityNameFilter && (
+                <button
+                  onClick={() => setEntityNameFilter("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-secondary-400 hover:text-white transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              placeholder="From Date"
+              className="input-field !py-2 !h-[38px] !text-sm"
+            />
+
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              placeholder="To Date"
+              className="input-field !py-2 !h-[38px] !text-sm"
+            />
           </div>
-
-          <select
-            value={entityFilter}
-            onChange={(e) => setEntityFilter(e.target.value)}
-            className="input-field"
-          >
-            {ENTITY_OPTIONS.map((option) => (
-              <option
-                key={option.value}
-                value={option.value}
-                className="bg-secondary-800"
-              >
-                {option.label}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={operationFilter}
-            onChange={(e) => setOperationFilter(e.target.value)}
-            className="input-field"
-          >
-            {OPERATION_OPTIONS.map((option) => (
-              <option
-                key={option.value}
-                value={option.value}
-                className="bg-secondary-800"
-              >
-                {option.label}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="text"
-            value={entityNameFilter}
-            onChange={(e) => setEntityNameFilter(e.target.value)}
-            placeholder="Entity name..."
-            className="input-field"
-          />
-
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            placeholder="From Date"
-            className="input-field"
-          />
-
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            placeholder="To Date"
-            className="input-field"
-          />
         </div>
       </div>
 
       {/* Table */}
-      <div className="glass-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
+      <div className="flex-1 glass-card flex flex-col h-[calc(100vh-19rem)]">
+        <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar rounded-t-2xl">
+          <table className="w-full relative">
+            <thead className="sticky top-0 z-10 bg-secondary-900/95 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
               <tr className="border-b border-secondary-700/50">
                 <th className="table-header">User</th>
                 <th className="table-header">Operation</th>
@@ -534,7 +553,7 @@ export const ActivityLogs: React.FC = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="p-4 border-t border-secondary-700/30 flex items-center justify-between">
+          <div className="p-4 border-t border-secondary-700/30 flex items-center justify-between shrink-0 bg-secondary-900/50">
             <p className="text-sm text-secondary-400">
               Showing{" "}
               <span className="font-medium text-white">
@@ -551,8 +570,9 @@ export const ActivityLogs: React.FC = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handlePageChange(page - 1)}
-                disabled={page === 1 || loading}
+                disabled={page <= 1 || loading}
                 className="p-2 rounded-lg hover:bg-secondary-700 text-secondary-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                aria-label="Previous page"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -574,7 +594,7 @@ export const ActivityLogs: React.FC = () => {
                         "w-8 h-8 rounded-lg text-sm font-medium transition-colors",
                         page === p
                           ? "bg-primary-600 text-white"
-                          : "hover:bg-secondary-700 text-secondary-400 hover:text-white"
+                          : "hover:bg-secondary-700 text-secondary-400 hover:text-white",
                       )}
                     >
                       {p}
@@ -585,8 +605,9 @@ export const ActivityLogs: React.FC = () => {
 
               <button
                 onClick={() => handlePageChange(page + 1)}
-                disabled={page === totalPages || loading}
+                disabled={page >= totalPages || loading}
                 className="p-2 rounded-lg hover:bg-secondary-700 text-secondary-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                aria-label="Next page"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -597,111 +618,15 @@ export const ActivityLogs: React.FC = () => {
 
       {/* Detail Modal */}
       {selectedLog && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="glass-card w-full max-w-2xl p-6 animate-fadeIn max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">
-                Activity Log Details
-              </h2>
-              <button
-                onClick={() => setSelectedLog(null)}
-                className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  User
-                </label>
-                <div className="flex items-center gap-3 p-3 bg-secondary-800/50 rounded-xl">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-semibold text-sm">
-                    {getUserInitials(selectedLog)}
-                  </div>
-                  <div>
-                    <div className="font-medium text-white">
-                      {getUserName(selectedLog)}
-                    </div>
-                    <div className="text-sm text-secondary-400">
-                      {getUserEmail(selectedLog)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Operation
-                  </label>
-                  <div className="p-3 bg-secondary-800/50 rounded-xl">
-                    {getOperationBadge(selectedLog.operation)}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Entity
-                  </label>
-                  <div className="p-3 bg-secondary-800/50 rounded-xl">
-                    <span className="text-sm text-secondary-200 capitalize">
-                      {selectedLog.entity.replace(/_/g, " ")}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Entity Name
-                </label>
-                <div className="p-3 bg-secondary-800/50 rounded-xl">
-                  <span className="text-sm text-secondary-200">
-                    {selectedLog.entityName || "-"}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Timestamp
-                </label>
-                <div className="p-3 bg-secondary-800/50 rounded-xl">
-                  <div className="text-sm text-secondary-200">
-                    {format(new Date(selectedLog.ts), "PPpp")}
-                  </div>
-                </div>
-              </div>
-
-              {selectedLog.from && (
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Previous Values
-                  </label>
-                  <div className="p-3 bg-secondary-800/50 rounded-xl">
-                    <pre className="text-xs text-secondary-300 overflow-auto">
-                      {JSON.stringify(selectedLog.from, null, 2)}
-                    </pre>
-                  </div>
-                </div>
-              )}
-
-              {selectedLog.to && (
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    New Values
-                  </label>
-                  <div className="p-3 bg-secondary-800/50 rounded-xl">
-                    <pre className="text-xs text-secondary-300 overflow-auto">
-                      {JSON.stringify(selectedLog.to, null, 2)}
-                    </pre>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3 pt-6 mt-6 border-t border-secondary-700/50">
+        <SlideInModal
+          isOpen={true}
+          onClose={() => setSelectedLog(null)}
+          title="Activity Log Details"
+          icon={FileText}
+          iconColor="primary"
+          size="md"
+          footer={
+            <div className="flex gap-3 w-full">
               <button
                 onClick={() => setSelectedLog(null)}
                 className="btn-secondary flex-1"
@@ -709,8 +634,98 @@ export const ActivityLogs: React.FC = () => {
                 Close
               </button>
             </div>
+          }
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-secondary-300 mb-2">
+                User
+              </label>
+              <div className="flex items-center gap-3 p-3 bg-secondary-800/50 rounded-xl">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-semibold text-sm">
+                  {getUserInitials(selectedLog)}
+                </div>
+                <div>
+                  <div className="font-medium text-white">
+                    {getUserName(selectedLog)}
+                  </div>
+                  <div className="text-sm text-secondary-400">
+                    {getUserEmail(selectedLog)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Operation
+                </label>
+                <div className="p-3 bg-secondary-800/50 rounded-xl">
+                  {getOperationBadge(selectedLog.operation)}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Entity
+                </label>
+                <div className="p-3 bg-secondary-800/50 rounded-xl">
+                  <span className="text-sm text-secondary-200 capitalize">
+                    {selectedLog.entity.replace(/_/g, " ")}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-secondary-300 mb-2">
+                Entity Name
+              </label>
+              <div className="p-3 bg-secondary-800/50 rounded-xl">
+                <span className="text-sm text-secondary-200">
+                  {selectedLog.entityName || "-"}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-secondary-300 mb-2">
+                Timestamp
+              </label>
+              <div className="p-3 bg-secondary-800/50 rounded-xl">
+                <div className="text-sm text-secondary-200">
+                  {format(new Date(selectedLog.ts), "PPpp")}
+                </div>
+              </div>
+            </div>
+
+            {selectedLog.from && (
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Previous Values
+                </label>
+                <div className="p-3 bg-secondary-800/50 rounded-xl">
+                  <pre className="text-xs text-secondary-300 overflow-auto">
+                    {JSON.stringify(selectedLog.from, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            )}
+
+            {selectedLog.to && (
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  New Values
+                </label>
+                <div className="p-3 bg-secondary-800/50 rounded-xl">
+                  <pre className="text-xs text-secondary-300 overflow-auto">
+                    {JSON.stringify(selectedLog.to, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        </SlideInModal>
       )}
     </div>
   );

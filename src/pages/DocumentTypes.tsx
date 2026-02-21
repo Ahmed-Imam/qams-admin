@@ -1,11 +1,6 @@
-import {
-  Edit,
-  FileStack,
-  Plus,
-  Search,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Edit, FileStack, Plus, Search, Trash2, X } from "lucide-react";
+import { SlideInModal } from "../components/SlideInModal";
+import { ConfirmationModal } from "../components/ConfirmationModal";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { documentTypesAPI } from "../api/documentTypes";
@@ -48,9 +43,12 @@ export const DocumentTypes: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingDoc, setEditingDoc] = useState<DocumentType | null>(null);
-  const [formData, setFormData] = useState<CreateDocumentTypeDto>(
-    getInitialFormData()
-  );
+  const [formData, setFormData] =
+    useState<CreateDocumentTypeDto>(getInitialFormData());
+
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [docToDelete, setDocToDelete] = useState<{ id: string } | null>(null);
 
   const fetchData = async () => {
     try {
@@ -70,7 +68,7 @@ export const DocumentTypes: React.FC = () => {
   const filteredDocumentTypes = documentTypes.filter(
     (dt) =>
       dt.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      dt.code.toLowerCase().includes(searchQuery.toLowerCase())
+      dt.code.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,9 +99,7 @@ export const DocumentTypes: React.FC = () => {
       closeModal();
       fetchData();
     } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Operation failed"
-      );
+      toast.error(error?.response?.data?.message || "Operation failed");
     }
   };
 
@@ -121,15 +117,20 @@ export const DocumentTypes: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this document type?")) return;
+  const openDeleteConfirm = (id: string) => {
+    setDocToDelete({ id });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!docToDelete) return;
     try {
-      await documentTypesAPI.delete(id);
+      await documentTypesAPI.delete(docToDelete.id);
       toast.success("Document type deleted successfully");
       fetchData();
     } catch (error: any) {
       toast.error(
-        error?.response?.data?.message || "Failed to delete document type"
+        error?.response?.data?.message || "Failed to delete document type",
       );
     }
   };
@@ -140,11 +141,7 @@ export const DocumentTypes: React.FC = () => {
     setFormData(getInitialFormData());
   };
 
-  const toggleArray = <T,>(
-    arr: T[],
-    value: T,
-    setter: (v: T[]) => void
-  ) => {
+  const toggleArray = <T,>(arr: T[], value: T, setter: (v: T[]) => void) => {
     if (arr.includes(value)) {
       setter(arr.filter((x) => x !== value));
     } else {
@@ -161,13 +158,11 @@ export const DocumentTypes: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6 animate-fadeIn min-h-[calc(100vh-5rem)]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Document Types
-          </h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Document Types</h1>
           <p className="text-secondary-400">
             Manage common document types (not tied to any client)
           </p>
@@ -190,8 +185,16 @@ export const DocumentTypes: React.FC = () => {
             placeholder="Search by name or code..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10"
+            className="input-field pl-10 pr-10"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-secondary-500 hover:text-white hover:bg-secondary-700 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -215,7 +218,7 @@ export const DocumentTypes: React.FC = () => {
                   <Edit className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => handleDelete(doc._id)}
+                  onClick={() => openDeleteConfirm(doc._id)}
                   className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -237,16 +240,14 @@ export const DocumentTypes: React.FC = () => {
             <div className="text-xs text-secondary-500 space-y-1">
               <p>Review cycle: {doc.reviewCycle} months</p>
               {doc.createdAt && (
-                <p>
-                  Created: {new Date(doc.createdAt).toLocaleDateString()}
-                </p>
+                <p>Created: {new Date(doc.createdAt).toLocaleDateString()}</p>
               )}
             </div>
           </div>
         ))}
 
         {filteredDocumentTypes.length === 0 && (
-          <div className="col-span-full text-center py-12">
+          <div className="col-span-full text-center py-12 min-h-[70vh]">
             <FileStack className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
             <p className="text-secondary-400">No document types found</p>
           </div>
@@ -254,24 +255,41 @@ export const DocumentTypes: React.FC = () => {
       </div>
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="glass-card w-full max-w-lg p-6 animate-fadeIn my-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">
-                {editingDoc
-                  ? "Edit Document Type"
-                  : "Add New Document Type (Common)"}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+      <SlideInModal
+        isOpen={showModal}
+        onClose={closeModal}
+        title={editingDoc ? "Edit Document Type" : "Add New Document Type"}
+        icon={FileStack}
+        iconColor="emerald"
+        badges={
+          editingDoc ? [{ label: editingDoc.code, variant: "default" }] : []
+        }
+        size="md"
+        footer={
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="btn-secondary flex-1"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="doctype-form"
+              className="btn-primary flex-1"
+            >
+              {editingDoc ? "Update Document Type" : "Create Document Type"}
+            </button>
+          </div>
+        }
+      >
+        <form id="doctype-form" onSubmit={handleSubmit} className="space-y-6">
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Basic Information
+            </h3>
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-secondary-300 mb-2">
                   Name
@@ -337,84 +355,76 @@ export const DocumentTypes: React.FC = () => {
                   required
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Rules
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {RULE_OPTIONS.map((rule) => (
-                    <button
-                      key={rule}
-                      type="button"
-                      onClick={() =>
-                        toggleArray(
-                          formData.rules || [],
-                          rule,
-                          (v) =>
-                            setFormData({ ...formData, rules: v })
-                        )
-                      }
-                      className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                        (formData.rules || []).includes(rule)
-                          ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
-                          : "bg-secondary-700/50 text-secondary-400 border border-secondary-600 hover:border-secondary-500"
-                      }`}
-                    >
-                      {RULE_LABELS[rule] ?? rule}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Integration settings
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {INTEGRATION_OPTIONS.map((intg) => (
-                    <button
-                      key={intg}
-                      type="button"
-                      onClick={() =>
-                        toggleArray(
-                          formData.integrationSettings || [],
-                          intg,
-                          (v) =>
-                            setFormData({
-                              ...formData,
-                              integrationSettings: v,
-                            })
-                        )
-                      }
-                      className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                        (formData.integrationSettings || []).includes(intg)
-                          ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
-                          : "bg-secondary-700/50 text-secondary-400 border border-secondary-600 hover:border-secondary-500"
-                      }`}
-                    >
-                      {INTEGRATION_LABELS[intg] ?? intg}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="btn-secondary flex-1"
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary flex-1">
-                  {editingDoc ? "Update" : "Create"}
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
+
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Rules
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {RULE_OPTIONS.map((rule) => (
+                <button
+                  key={rule}
+                  type="button"
+                  onClick={() =>
+                    toggleArray(formData.rules || [], rule, (v) =>
+                      setFormData({ ...formData, rules: v }),
+                    )
+                  }
+                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                    (formData.rules || []).includes(rule)
+                      ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
+                      : "bg-secondary-700/50 text-secondary-400 border border-secondary-600 hover:border-secondary-500"
+                  }`}
+                >
+                  {RULE_LABELS[rule] ?? rule}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Integration Settings
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {INTEGRATION_OPTIONS.map((intg) => (
+                <button
+                  key={intg}
+                  type="button"
+                  onClick={() =>
+                    toggleArray(formData.integrationSettings || [], intg, (v) =>
+                      setFormData({
+                        ...formData,
+                        integrationSettings: v,
+                      }),
+                    )
+                  }
+                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                    (formData.integrationSettings || []).includes(intg)
+                      ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
+                      : "bg-secondary-700/50 text-secondary-400 border border-secondary-600 hover:border-secondary-500"
+                  }`}
+                >
+                  {INTEGRATION_LABELS[intg] ?? intg}
+                </button>
+              ))}
+            </div>
+          </div>
+        </form>
+      </SlideInModal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Document Type"
+        message="Are you sure you want to delete this document type? This action cannot be undone."
+        confirmText="Delete Document Type"
+        variant="danger"
+      />
     </div>
   );
 };

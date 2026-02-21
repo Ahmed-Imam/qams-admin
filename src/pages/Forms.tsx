@@ -18,6 +18,8 @@ import type {
   FormType,
 } from "../api/forms";
 import { formsAPI } from "../api/forms";
+import { SlideInModal } from "../components/SlideInModal";
+import { ConfirmationModal } from "../components/ConfirmationModal";
 
 const FIELD_TYPE_OPTIONS: { value: FormFieldType; label: string }[] = [
   { value: "text_input", label: "Text Input" },
@@ -49,7 +51,7 @@ const FormModal: React.FC<FormModalProps> = ({
   onSuccess,
 }) => {
   const [activeTab, setActiveTab] = useState<"info" | "fields" | "advanced">(
-    "info"
+    "info",
   );
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -121,8 +123,9 @@ const FormModal: React.FC<FormModalProps> = ({
           required: f.required ?? false,
           options: f.type === "dropdown" ? f.options || [] : undefined,
         })),
-        capaTriggers:
-          formData.capaTriggers?.length ? formData.capaTriggers : undefined,
+        capaTriggers: formData.capaTriggers?.length
+          ? formData.capaTriggers
+          : undefined,
       };
       if (mode === "edit" && form?._id) {
         await formsAPI.update(form._id, payload);
@@ -166,17 +169,30 @@ const FormModal: React.FC<FormModalProps> = ({
         const idx = prev.formFields.findIndex((f) => f._id === fieldId);
         if (idx === -1) return prev;
         const next = [...prev.formFields];
-        if (updates.type && next[idx].type !== updates.type && updates.type !== "dropdown") {
-          const u = { ...next[idx], ...updates };
+
+        let newUpdates = { ...updates };
+        if (newUpdates.label !== undefined) {
+          const timestamp = Date.now();
+          const labelForId =
+            newUpdates.label.replace(/\s+/g, "_").toLowerCase() || "field";
+          newUpdates.name = `${labelForId}_${timestamp}`;
+        }
+
+        if (
+          newUpdates.type &&
+          next[idx].type !== newUpdates.type &&
+          newUpdates.type !== "dropdown"
+        ) {
+          const u = { ...next[idx], ...newUpdates };
           delete (u as Partial<FormField>).options;
           next[idx] = u;
         } else {
-          next[idx] = { ...next[idx], ...updates };
+          next[idx] = { ...next[idx], ...newUpdates };
         }
         return { ...prev, formFields: next };
       });
     },
-    []
+    [],
   );
 
   const removeField = useCallback((fieldId: string) => {
@@ -206,358 +222,33 @@ const FormModal: React.FC<FormModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="glass-card w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-fadeIn my-8">
-        <div className="flex items-center justify-between p-6 border-b border-secondary-700/50 flex-shrink-0">
-          <h2 className="text-xl font-bold text-white">
-            {mode === "edit" ? "Edit Form" : "Add Form"}
-            {formType === "incident" ? " (Incident Report)" : ""}
-          </h2>
+    <SlideInModal
+      isOpen={isOpen}
+      onClose={() => {
+        setActiveTab("info");
+        onClose();
+      }}
+      title={
+        (mode === "edit" ? "Edit Form" : "Add Form") +
+        (formType === "incident" ? " (Incident Report)" : "")
+      }
+      icon={FileText}
+      iconColor={mode === "edit" ? "amber" : "primary"}
+      badges={[
+        {
+          label: mode === "edit" ? "Editing" : "New",
+          variant: mode === "edit" ? "primary" : "default",
+        },
+      ]}
+      size="lg"
+      footer={
+        <div className="flex gap-3 w-full">
           <button
             type="button"
             onClick={() => {
               setActiveTab("info");
               onClose();
             }}
-            className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="flex gap-1 p-4 pb-4 border-b border-secondary-700/30 flex-shrink-0">
-          {(["info", "fields", "advanced"] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
-                  : "text-secondary-400 hover:text-white border border-transparent"
-              }`}
-            >
-              {tab === "info" ? "Info" : tab === "fields" ? "Fields" : "CAPA"}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {activeTab === "info" && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Name <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  className="input-field"
-                  placeholder="e.g. Risk Assessment Form"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  className="input-field min-h-[80px] resize-none"
-                  placeholder="Describe the purpose of this form"
-                />
-              </div>
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary-800/50 border border-secondary-700/50">
-                <input
-                  type="checkbox"
-                  id="capaRequired"
-                  checked={formData.capaRequired}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      capaRequired: e.target.checked,
-                    }))
-                  }
-                  className="w-4 h-4 rounded border-secondary-600 text-primary-500 focus:ring-primary-500"
-                />
-                <label
-                  htmlFor="capaRequired"
-                  className="text-sm font-medium text-secondary-300 cursor-pointer"
-                >
-                  CAPA required after form submission
-                </label>
-              </div>
-            </>
-          )}
-
-          {activeTab === "fields" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-white">Form Fields</h3>
-                <button
-                  type="button"
-                  onClick={addField}
-                  className="btn-primary flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Field
-                </button>
-              </div>
-              {formData.formFields.length === 0 ? (
-                <div className="text-center py-8 text-secondary-500">
-                  <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No fields yet. Add fields to build your form.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {formData.formFields.map((field, index) => (
-                    <div
-                      key={field._id}
-                      className="glass-card p-4 border border-secondary-700/50"
-                    >
-                      <div className="flex items-start gap-2 mb-3">
-                        <div className="flex items-center gap-1 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => moveField(field._id, "up")}
-                            disabled={index === 0}
-                            className="p-1.5 text-secondary-400 hover:text-white disabled:opacity-30 rounded"
-                          >
-                            ↑
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveField(field._id, "down")}
-                            disabled={index === formData.formFields.length - 1}
-                            className="p-1.5 text-secondary-400 hover:text-white disabled:opacity-30 rounded"
-                          >
-                            ↓
-                          </button>
-                        </div>
-                        <GripVertical className="w-4 h-4 text-secondary-500 flex-shrink-0 mt-1" />
-                        <div className="flex-1 grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-medium text-secondary-400 mb-1">
-                              Field name
-                            </label>
-                            <input
-                              type="text"
-                              value={field.name}
-                              onChange={(e) =>
-                                updateField(field._id, {
-                                  name: e.target.value,
-                                })
-                              }
-                              className="input-field text-sm"
-                              placeholder="e.g. full_name"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-secondary-400 mb-1">
-                              Label
-                            </label>
-                            <input
-                              type="text"
-                              value={field.label}
-                              onChange={(e) =>
-                                updateField(field._id, { label: e.target.value })
-                              }
-                              className="input-field text-sm"
-                              placeholder="e.g. Full Name"
-                            />
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <label className="flex items-center gap-2 text-sm text-secondary-400">
-                            <input
-                              type="checkbox"
-                              checked={field.required}
-                              onChange={(e) =>
-                                updateField(field._id, {
-                                  required: e.target.checked,
-                                })
-                              }
-                              className="w-4 h-4 rounded border-secondary-600 text-primary-500"
-                            />
-                            Required
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => removeField(field._id)}
-                            className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 mt-2">
-                        <div>
-                          <label className="block text-xs font-medium text-secondary-400 mb-1">
-                            Type
-                          </label>
-                          <select
-                            value={field.type}
-                            onChange={(e) =>
-                              updateField(field._id, {
-                                type: e.target.value as FormFieldType,
-                              })
-                            }
-                            className="input-field text-sm"
-                          >
-                            {FIELD_TYPE_OPTIONS.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-secondary-400 mb-1">
-                            Placeholder
-                          </label>
-                          <input
-                            type="text"
-                            value={field.placeholder || ""}
-                            onChange={(e) =>
-                              updateField(field._id, {
-                                placeholder: e.target.value,
-                              })
-                            }
-                            className="input-field text-sm"
-                            placeholder="Optional"
-                          />
-                        </div>
-                      </div>
-                      {field.type === "dropdown" && (
-                        <div className="mt-3">
-                          <label className="block text-xs font-medium text-secondary-400 mb-1">
-                            Options (one per line)
-                          </label>
-                          <textarea
-                            value={
-                              fieldOptionsText[field._id] ??
-                              field.options?.join("\n") ??
-                              ""
-                            }
-                            onChange={(e) => {
-                              const text = e.target.value;
-                              setFieldOptionsText((prev) => ({
-                                ...prev,
-                                [field._id]: text,
-                              }));
-                              const options = text
-                                .split("\n")
-                                .map((o) => o.trim())
-                                .filter(Boolean);
-                              updateField(field._id, { options });
-                            }}
-                            className="input-field text-sm min-h-[80px] resize-y"
-                            placeholder="Option 1&#10;Option 2"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === "advanced" && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-white">CAPA Triggers</h3>
-              <p className="text-sm text-secondary-400">
-                Configure automatic CAPA creation based on field responses.
-              </p>
-              <div className="space-y-3">
-                {formData.capaTriggers.map((trigger, index) => (
-                  <div
-                    key={index}
-                    className="glass-card p-4 flex items-center gap-3 flex-wrap"
-                  >
-                    <select
-                      value={trigger.field}
-                      onChange={(e) => {
-                        const next = [...formData.capaTriggers];
-                        next[index] = { ...next[index], field: e.target.value };
-                        setFormData((prev) => ({
-                          ...prev,
-                          capaTriggers: next,
-                        }));
-                      }}
-                      className="input-field flex-1 min-w-[120px]"
-                    >
-                      <option value="">Select field</option>
-                      {formData.formFields.map((f) => (
-                        <option key={f.name} value={f.name}>
-                          {f.label || f.name}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="text"
-                      value={trigger.value}
-                      onChange={(e) => {
-                        const next = [...formData.capaTriggers];
-                        next[index] = { ...next[index], value: e.target.value };
-                        setFormData((prev) => ({
-                          ...prev,
-                          capaTriggers: next,
-                        }));
-                      }}
-                      className="input-field flex-1 min-w-[120px]"
-                      placeholder="Value that triggers CAPA"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          capaTriggers: prev.capaTriggers.filter(
-                            (_, i) => i !== index
-                          ),
-                        }))
-                      }
-                      className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      capaTriggers: [
-                        ...prev.capaTriggers,
-                        { field: "", value: "" },
-                      ],
-                    }))
-                  }
-                  className="w-full py-3 rounded-lg border-2 border-dashed border-secondary-600 text-secondary-400 hover:border-primary-500/50 hover:text-primary-400 flex items-center justify-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add CAPA Trigger
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-3 p-6 border-t border-secondary-700/50 flex-shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
             className="btn-secondary flex-1"
           >
             Cancel
@@ -572,8 +263,335 @@ const FormModal: React.FC<FormModalProps> = ({
             {mode === "edit" ? "Update" : "Create"}
           </button>
         </div>
+      }
+    >
+      <div className="flex gap-1 pb-4 border-b border-secondary-700/30 mb-6 shrink-0">
+        {(["info", "fields", "advanced"] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === tab
+                ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
+                : "text-secondary-400 hover:text-white border border-transparent hover:bg-secondary-700/30"
+            }`}
+          >
+            {tab === "info" ? "Info" : tab === "fields" ? "Fields" : "CAPA"}
+          </button>
+        ))}
       </div>
-    </div>
+
+      <div className="space-y-4">
+        {activeTab === "info" && (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-secondary-300 mb-2">
+                Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
+                className="input-field"
+                placeholder="e.g. Risk Assessment Form"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-secondary-300 mb-2">
+                Description
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                className="input-field min-h-[80px] resize-none"
+                placeholder="Describe the purpose of this form"
+              />
+            </div>
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary-800/50 border border-secondary-700/50">
+              <input
+                type="checkbox"
+                id="capaRequired"
+                checked={formData.capaRequired}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    capaRequired: e.target.checked,
+                  }))
+                }
+                className="w-4 h-4 rounded border-secondary-600 text-primary-500 focus:ring-primary-500"
+              />
+              <label
+                htmlFor="capaRequired"
+                className="text-sm font-medium text-secondary-300 cursor-pointer"
+              >
+                CAPA required after form submission
+              </label>
+            </div>
+          </>
+        )}
+
+        {activeTab === "fields" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-white">Form Fields</h3>
+              <button
+                type="button"
+                onClick={addField}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Field
+              </button>
+            </div>
+            {formData.formFields.length === 0 ? (
+              <div className="text-center py-8 text-secondary-500">
+                <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>No fields yet. Add fields to build your form.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {formData.formFields.map((field, index) => (
+                  <div
+                    key={field._id}
+                    className="glass-card p-4 border border-secondary-700/50"
+                  >
+                    <div className="flex items-start gap-2 mb-3">
+                      <div className="flex items-center gap-1 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => moveField(field._id, "up")}
+                          disabled={index === 0}
+                          className="p-1.5 text-secondary-400 hover:text-white disabled:opacity-30 rounded"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveField(field._id, "down")}
+                          disabled={index === formData.formFields.length - 1}
+                          className="p-1.5 text-secondary-400 hover:text-white disabled:opacity-30 rounded"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                      <GripVertical className="w-4 h-4 text-secondary-500 flex-shrink-0 mt-1" />
+                      <div className="flex-1 grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-secondary-400 mb-1">
+                            Label
+                          </label>
+                          <input
+                            type="text"
+                            value={field.label}
+                            onChange={(e) =>
+                              updateField(field._id, {
+                                label: e.target.value,
+                              })
+                            }
+                            className="input-field text-sm"
+                            placeholder="e.g. Full Name"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-secondary-400 mb-1">
+                            Field Id
+                          </label>
+                          <input
+                            type="text"
+                            value={field.name}
+                            readOnly
+                            className="input-field text-sm bg-secondary-800/50 cursor-not-allowed opacity-70"
+                            placeholder="Auto-generated"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <label className="flex items-center gap-2 text-sm text-secondary-400">
+                          <input
+                            type="checkbox"
+                            checked={field.required}
+                            onChange={(e) =>
+                              updateField(field._id, {
+                                required: e.target.checked,
+                              })
+                            }
+                            className="w-4 h-4 rounded border-secondary-600 text-primary-500"
+                          />
+                          Required
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => removeField(field._id)}
+                          className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      <div>
+                        <label className="block text-xs font-medium text-secondary-400 mb-1">
+                          Type
+                        </label>
+                        <select
+                          value={field.type}
+                          onChange={(e) =>
+                            updateField(field._id, {
+                              type: e.target.value as FormFieldType,
+                            })
+                          }
+                          className="input-field text-sm"
+                        >
+                          {FIELD_TYPE_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-secondary-400 mb-1">
+                          Placeholder
+                        </label>
+                        <input
+                          type="text"
+                          value={field.placeholder || ""}
+                          onChange={(e) =>
+                            updateField(field._id, {
+                              placeholder: e.target.value,
+                            })
+                          }
+                          className="input-field text-sm"
+                          placeholder="Optional"
+                        />
+                      </div>
+                    </div>
+                    {field.type === "dropdown" && (
+                      <div className="mt-3">
+                        <label className="block text-xs font-medium text-secondary-400 mb-1">
+                          Options (one per line)
+                        </label>
+                        <textarea
+                          value={
+                            fieldOptionsText[field._id] ??
+                            field.options?.join("\n") ??
+                            ""
+                          }
+                          onChange={(e) => {
+                            const text = e.target.value;
+                            setFieldOptionsText((prev) => ({
+                              ...prev,
+                              [field._id]: text,
+                            }));
+                            const options = text
+                              .split("\n")
+                              .map((o) => o.trim())
+                              .filter(Boolean);
+                            updateField(field._id, { options });
+                          }}
+                          className="input-field text-sm min-h-[80px] resize-y"
+                          placeholder="Option 1&#10;Option 2"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "advanced" && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-white">CAPA Triggers</h3>
+            <p className="text-sm text-secondary-400">
+              Configure automatic CAPA creation based on field responses.
+            </p>
+            <div className="space-y-3">
+              {formData.capaTriggers.map((trigger, index) => (
+                <div
+                  key={index}
+                  className="glass-card p-4 flex items-center gap-3 flex-wrap"
+                >
+                  <select
+                    value={trigger.field}
+                    onChange={(e) => {
+                      const next = [...formData.capaTriggers];
+                      next[index] = { ...next[index], field: e.target.value };
+                      setFormData((prev) => ({
+                        ...prev,
+                        capaTriggers: next,
+                      }));
+                    }}
+                    className="input-field flex-1 min-w-[120px]"
+                  >
+                    <option value="">Select field</option>
+                    {formData.formFields.map((f) => (
+                      <option key={f.name} value={f.name}>
+                        {f.label || f.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={trigger.value}
+                    onChange={(e) => {
+                      const next = [...formData.capaTriggers];
+                      next[index] = { ...next[index], value: e.target.value };
+                      setFormData((prev) => ({
+                        ...prev,
+                        capaTriggers: next,
+                      }));
+                    }}
+                    className="input-field flex-1 min-w-[120px]"
+                    placeholder="Value that triggers CAPA"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        capaTriggers: prev.capaTriggers.filter(
+                          (_, i) => i !== index,
+                        ),
+                      }))
+                    }
+                    className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    capaTriggers: [
+                      ...prev.capaTriggers,
+                      { field: "", value: "" },
+                    ],
+                  }))
+                }
+                className="w-full py-3 rounded-lg border-2 border-dashed border-secondary-600 text-secondary-400 hover:border-primary-500/50 hover:text-primary-400 flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add CAPA Trigger
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </SlideInModal>
   );
 };
 
@@ -588,6 +606,13 @@ export const Forms: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingForm, setEditingForm] = useState<Form | null>(null);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [formToDelete, setFormToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const formType: FormType = activeTab === "incidents" ? "incident" : "normal";
   const list = activeTab === "forms" ? forms : incidents;
@@ -617,7 +642,7 @@ export const Forms: React.FC = () => {
   const filteredList = list.filter(
     (f) =>
       f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (f.description || "").toLowerCase().includes(searchQuery.toLowerCase())
+      (f.description || "").toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleAdd = () => {
@@ -632,10 +657,15 @@ export const Forms: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (form: Form) => {
-    if (!confirm(`Delete "${form.name}"?`)) return;
+  const openDeleteConfirm = (form: Form) => {
+    setFormToDelete({ id: form._id, name: form.name });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!formToDelete) return;
     try {
-      await formsAPI.delete(form._id);
+      await formsAPI.delete(formToDelete.id);
       toast.success("Form deleted");
       fetchAll();
     } catch (error: unknown) {
@@ -643,6 +673,7 @@ export const Forms: React.FC = () => {
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || "Failed to delete";
       toast.error(msg);
+      throw error;
     }
   };
 
@@ -668,7 +699,10 @@ export const Forms: React.FC = () => {
             Manage common forms and incident reports (not tied to any client)
           </p>
         </div>
-        <button onClick={handleAdd} className="btn-primary flex items-center gap-2">
+        <button
+          onClick={handleAdd}
+          className="btn-primary flex items-center gap-2"
+        >
           <Plus className="w-5 h-5" />
           Add {activeTab === "incidents" ? "Incident Report" : "Form"}
         </button>
@@ -707,8 +741,16 @@ export const Forms: React.FC = () => {
               placeholder="Search by name or description..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-field pl-10"
+              className="input-field pl-10 pr-10"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-secondary-500 hover:text-white hover:bg-secondary-700 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -735,14 +777,16 @@ export const Forms: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDelete(form)}
+                    onClick={() => openDeleteConfirm(form)}
                     className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">{form.name}</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                {form.name}
+              </h3>
               {form.description && (
                 <p className="text-sm text-secondary-400 line-clamp-2 mb-3">
                   {form.description}
@@ -756,7 +800,9 @@ export const Forms: React.FC = () => {
                   </span>
                 )}
                 {form.createdAt && (
-                  <p>Created: {new Date(form.createdAt).toLocaleDateString()}</p>
+                  <p>
+                    Created: {new Date(form.createdAt).toLocaleDateString()}
+                  </p>
                 )}
               </div>
             </div>
@@ -765,7 +811,8 @@ export const Forms: React.FC = () => {
             <div className="col-span-full text-center py-12">
               <FileText className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
               <p className="text-secondary-400">
-                No {activeTab === "incidents" ? "incident reports" : "forms"} found
+                No {activeTab === "incidents" ? "incident reports" : "forms"}{" "}
+                found
               </p>
             </div>
           )}
@@ -779,6 +826,18 @@ export const Forms: React.FC = () => {
         mode={modalMode}
         formType={formType}
         onSuccess={fetchAll}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Form"
+        message="Are you sure you want to delete this form? This action cannot be undone."
+        itemName={formToDelete?.name}
+        confirmText="Delete Form"
+        variant="danger"
       />
     </div>
   );

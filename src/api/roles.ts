@@ -10,18 +10,26 @@ interface GetRolesParams {
   page?: number;
   limit?: number;
   clientId?: string;
+  search?: string;
 }
 
 const unwrapResponse = <T>(response: { data: ApiResponse<T> | T }): T => {
   const data = response.data;
-  if (data && typeof data === 'object' && 'statusCode' in data && 'data' in data) {
+  if (
+    data &&
+    typeof data === "object" &&
+    "statusCode" in data &&
+    "data" in data
+  ) {
     return (data as ApiResponse<T>).data;
   }
   return data as T;
 };
 
 export const rolesAPI = {
-  getAll: async (params?: GetRolesParams): Promise<PaginatedResponse<Role>> => {
+  getAll: async (
+    params?: GetRolesParams,
+  ): Promise<PaginatedResponse<Role> | Role[]> => {
     const response = await axiosInstance.get("/roles", { params });
     return unwrapResponse(response);
   },
