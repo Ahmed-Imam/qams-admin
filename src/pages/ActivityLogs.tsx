@@ -277,15 +277,10 @@ export const ActivityLogs: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="glass-card p-4 space-y-4">
-        <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-secondary-400" />
-          <h2 className="text-lg font-semibold text-white">Filters</h2>
-        </div>
-
+      <div className="glass-card p-3">
         {/* Error Message */}
         {error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+          <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl mb-3">
             <div className="flex items-start gap-3">
               <div className="flex-1">
                 <h3 className="text-sm font-medium text-red-400">
@@ -303,179 +298,181 @@ export const ActivityLogs: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {/* User Search */}
-          <div className="relative" ref={userSearchRef}>
-            {selectedUser ? (
-              <div className="relative w-full h-[42px] px-3 bg-primary-500/10 border border-primary-500/30 rounded-xl flex items-center">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
-                    {selectedUser.firstName?.[0] ||
-                      selectedUser.email?.[0] ||
-                      "U"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-primary-400 truncate">
-                      {selectedUser.firstName} {selectedUser.lastName}
+        <div className="flex flex-col xl:flex-row gap-3">
+          <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2">
+            {/* User Search */}
+            <div className="relative" ref={userSearchRef}>
+              {selectedUser ? (
+                <div className="relative w-full h-[38px] px-3 bg-primary-500/10 border border-primary-500/30 rounded-xl flex items-center">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
+                      {selectedUser.firstName?.[0] ||
+                        selectedUser.email?.[0] ||
+                        "U"}
                     </div>
-                  </div>
-                  <button
-                    onClick={handleClearUser}
-                    className="flex-shrink-0 text-primary-400 hover:text-primary-300 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 w-4 h-4" />
-                <input
-                  type="text"
-                  value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
-                  onFocus={() => {
-                    if (
-                      userSearch.trim().length >= 2 &&
-                      userSuggestions.length === 0 &&
-                      !isSearchingUsers
-                    ) {
-                      const query = userSearch.trim();
-                      if (query.length >= 2) {
-                        usersAPI
-                          .getAll({ page: 1, limit: 10, search: query })
-                          .then((res) => {
-                            setUserSuggestions(res.data || []);
-                          });
-                      }
-                    }
-                  }}
-                  placeholder="Search user..."
-                  className="input-field pl-10 pr-10"
-                />
-                {userSearch && (
-                  <button
-                    onClick={() => {
-                      setUserSearch("");
-                      setUserSuggestions([]);
-                    }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-secondary-400 hover:text-white transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            )}
-            {(isSearchingUsers || userSuggestions.length > 0) &&
-              !selectedUser && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-secondary-800 border border-secondary-700/50 rounded-xl shadow-xl z-50 max-h-60 overflow-auto">
-                  {isSearchingUsers && (
-                    <div className="px-3 py-2 text-sm text-secondary-400">
-                      Searching...
-                    </div>
-                  )}
-                  {!isSearchingUsers &&
-                    userSuggestions.length === 0 &&
-                    userSearch.trim().length >= 2 && (
-                      <div className="px-3 py-2 text-sm text-secondary-400">
-                        No users found
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-primary-400 truncate">
+                        {selectedUser.firstName} {selectedUser.lastName}
                       </div>
-                    )}
-                  {!isSearchingUsers &&
-                    userSuggestions.map((user) => (
-                      <button
-                        key={user._id}
-                        type="button"
-                        onClick={() => handleUserSelect(user)}
-                        className="w-full text-left px-3 py-2 hover:bg-secondary-700/50 flex items-center gap-3 transition-colors"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-xs font-semibold text-white">
-                          {user.firstName?.[0] || user.email?.[0] || "U"}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-white truncate">
-                            {user.firstName} {user.lastName}
-                          </div>
-                          <div className="text-xs text-secondary-400 truncate">
-                            {user.email}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
+                    </div>
+                    <button
+                      onClick={handleClearUser}
+                      className="flex-shrink-0 text-primary-400 hover:text-primary-300 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    onFocus={() => {
+                      if (
+                        userSearch.trim().length >= 2 &&
+                        userSuggestions.length === 0 &&
+                        !isSearchingUsers
+                      ) {
+                        const query = userSearch.trim();
+                        if (query.length >= 2) {
+                          usersAPI
+                            .getAll({ page: 1, limit: 10, search: query })
+                            .then((res) => {
+                              setUserSuggestions(res.data || []);
+                            });
+                        }
+                      }
+                    }}
+                    placeholder="Search user..."
+                    className="input-field !py-2 !h-[38px] !text-sm !pl-9 !pr-8"
+                  />
+                  {userSearch && (
+                    <button
+                      onClick={() => {
+                        setUserSearch("");
+                        setUserSuggestions([]);
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-secondary-400 hover:text-white transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               )}
-          </div>
+              {(isSearchingUsers || userSuggestions.length > 0) &&
+                !selectedUser && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-secondary-800 border border-secondary-700/50 rounded-xl shadow-xl z-50 max-h-60 overflow-auto">
+                    {isSearchingUsers && (
+                      <div className="px-3 py-2 text-sm text-secondary-400">
+                        Searching...
+                      </div>
+                    )}
+                    {!isSearchingUsers &&
+                      userSuggestions.length === 0 &&
+                      userSearch.trim().length >= 2 && (
+                        <div className="px-3 py-2 text-sm text-secondary-400">
+                          No users found
+                        </div>
+                      )}
+                    {!isSearchingUsers &&
+                      userSuggestions.map((user) => (
+                        <button
+                          key={user._id}
+                          type="button"
+                          onClick={() => handleUserSelect(user)}
+                          className="w-full text-left px-3 py-2 hover:bg-secondary-700/50 flex items-center gap-3 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-xs font-semibold text-white">
+                            {user.firstName?.[0] || user.email?.[0] || "U"}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-white truncate">
+                              {user.firstName} {user.lastName}
+                            </div>
+                            <div className="text-xs text-secondary-400 truncate">
+                              {user.email}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                )}
+            </div>
 
-          <select
-            value={entityFilter}
-            onChange={(e) => setEntityFilter(e.target.value)}
-            className="input-field"
-          >
-            {ENTITY_OPTIONS.map((option) => (
-              <option
-                key={option.value}
-                value={option.value}
-                className="bg-secondary-800"
-              >
-                {option.label}
-              </option>
-            ))}
-          </select>
+            <select
+              value={entityFilter}
+              onChange={(e) => setEntityFilter(e.target.value)}
+              className="input-field !py-2 !h-[38px] !text-sm"
+            >
+              {ENTITY_OPTIONS.map((option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                  className="bg-secondary-800"
+                >
+                  {option.label}
+                </option>
+              ))}
+            </select>
 
-          <select
-            value={operationFilter}
-            onChange={(e) => setOperationFilter(e.target.value)}
-            className="input-field"
-          >
-            {OPERATION_OPTIONS.map((option) => (
-              <option
-                key={option.value}
-                value={option.value}
-                className="bg-secondary-800"
-              >
-                {option.label}
-              </option>
-            ))}
-          </select>
+            <select
+              value={operationFilter}
+              onChange={(e) => setOperationFilter(e.target.value)}
+              className="input-field !py-2 !h-[38px] !text-sm"
+            >
+              {OPERATION_OPTIONS.map((option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                  className="bg-secondary-800"
+                >
+                  {option.label}
+                </option>
+              ))}
+            </select>
 
-          <div className="relative">
+            <div className="relative">
+              <input
+                type="text"
+                value={entityNameFilter}
+                onChange={(e) => setEntityNameFilter(e.target.value)}
+                placeholder="Entity name..."
+                className="input-field !py-2 !h-[38px] !text-sm !pr-8"
+              />
+              {entityNameFilter && (
+                <button
+                  onClick={() => setEntityNameFilter("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-secondary-400 hover:text-white transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
             <input
-              type="text"
-              value={entityNameFilter}
-              onChange={(e) => setEntityNameFilter(e.target.value)}
-              placeholder="Entity name..."
-              className="input-field pr-10"
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              placeholder="From Date"
+              className="input-field !py-2 !h-[38px] !text-sm"
             />
-            {entityNameFilter && (
-              <button
-                onClick={() => setEntityNameFilter("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-secondary-400 hover:text-white transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              placeholder="To Date"
+              className="input-field !py-2 !h-[38px] !text-sm"
+            />
           </div>
-
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            placeholder="From Date"
-            className="input-field"
-          />
-
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            placeholder="To Date"
-            className="input-field"
-          />
         </div>
       </div>
 
       {/* Table */}
-      <div className="flex-1 glass-card flex flex-col h-[calc(100vh-24rem)]">
+      <div className="flex-1 glass-card flex flex-col h-[calc(100vh-19rem)]">
         <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar rounded-t-2xl">
           <table className="w-full relative">
             <thead className="sticky top-0 z-10 bg-secondary-900/95 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
