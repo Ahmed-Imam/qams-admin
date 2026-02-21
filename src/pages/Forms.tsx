@@ -169,16 +169,25 @@ const FormModal: React.FC<FormModalProps> = ({
         const idx = prev.formFields.findIndex((f) => f._id === fieldId);
         if (idx === -1) return prev;
         const next = [...prev.formFields];
+
+        let newUpdates = { ...updates };
+        if (newUpdates.label !== undefined) {
+          const timestamp = Date.now();
+          const labelForId =
+            newUpdates.label.replace(/\s+/g, "_").toLowerCase() || "field";
+          newUpdates.name = `${labelForId}_${timestamp}`;
+        }
+
         if (
-          updates.type &&
-          next[idx].type !== updates.type &&
-          updates.type !== "dropdown"
+          newUpdates.type &&
+          next[idx].type !== newUpdates.type &&
+          newUpdates.type !== "dropdown"
         ) {
-          const u = { ...next[idx], ...updates };
+          const u = { ...next[idx], ...newUpdates };
           delete (u as Partial<FormField>).options;
           next[idx] = u;
         } else {
-          next[idx] = { ...next[idx], ...updates };
+          next[idx] = { ...next[idx], ...newUpdates };
         }
         return { ...prev, formFields: next };
       });
@@ -378,22 +387,6 @@ const FormModal: React.FC<FormModalProps> = ({
                       <div className="flex-1 grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-xs font-medium text-secondary-400 mb-1">
-                            Field name
-                          </label>
-                          <input
-                            type="text"
-                            value={field.name}
-                            onChange={(e) =>
-                              updateField(field._id, {
-                                name: e.target.value,
-                              })
-                            }
-                            className="input-field text-sm"
-                            placeholder="e.g. full_name"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-secondary-400 mb-1">
                             Label
                           </label>
                           <input
@@ -406,6 +399,18 @@ const FormModal: React.FC<FormModalProps> = ({
                             }
                             className="input-field text-sm"
                             placeholder="e.g. Full Name"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-secondary-400 mb-1">
+                            Field Id
+                          </label>
+                          <input
+                            type="text"
+                            value={field.name}
+                            readOnly
+                            className="input-field text-sm bg-secondary-800/50 cursor-not-allowed opacity-70"
+                            placeholder="Auto-generated"
                           />
                         </div>
                       </div>
