@@ -19,6 +19,7 @@ import { clientsAPI } from "../api/clients";
 import { usersAPI } from "../api/users";
 import type { Client, ClientType, CreateClientDto, User } from "../types";
 import { ConfirmationModal } from "../components/ConfirmationModal";
+import clsx from "clsx";
 
 const clientTypes: ClientType[] = [
   "hospital",
@@ -41,10 +42,7 @@ export const Clients: React.FC = () => {
     classification: "",
     address: "",
   });
-  const [showManageUsersModal, setShowManageUsersModal] = useState(false);
-  const [manageUsersClient, setManageUsersClient] = useState<Client | null>(
-    null,
-  );
+  const [activeTab, setActiveTab] = useState<"details" | "users">("details");
   const [clientUsers, setClientUsers] = useState<User[]>([]);
   const [loadingManageUsers, setLoadingManageUsers] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -119,6 +117,7 @@ export const Clients: React.FC = () => {
       classification: client.classification,
       address: client.address,
     });
+    setActiveTab("details");
     setShowModal(true);
   };
 
@@ -148,51 +147,54 @@ export const Clients: React.FC = () => {
       classification: "",
       address: "",
     });
-  };
-
-  const openManageUsers = (client: Client) => {
-    setManageUsersClient(client);
-    setShowManageUsersModal(true);
-    setClientUsers([]);
-    setUserSearchQuery("");
-    setUserSearchResults([]);
-  };
-
-  const closeManageUsersModal = () => {
-    setShowManageUsersModal(false);
-    setManageUsersClient(null);
+    setActiveTab("details");
     setClientUsers([]);
     setUserSearchQuery("");
     setUserSearchResults([]);
     setUserDropdownOpen(false);
   };
 
+  const openManageUsers = (client: Client) => {
+    setEditingClient(client);
+    setFormData({
+      name: client.name,
+      type: client.type,
+      classification: client.classification,
+      address: client.address,
+    });
+    setActiveTab("users");
+    setShowModal(true);
+    setClientUsers([]);
+    setUserSearchQuery("");
+    setUserSearchResults([]);
+  };
+
   const fetchClientUsers = useCallback(async () => {
-    if (!manageUsersClient) return;
+    if (!editingClient) return;
     setLoadingManageUsers(true);
     try {
       const clientWithUsers = await clientsAPI.getByIdWithUsers(
-        manageUsersClient._id,
+        editingClient._id,
       );
       setClientUsers(clientWithUsers.users || []);
     } catch (error) {
       toast.error("Failed to load users");
-      closeManageUsersModal();
+      closeModal();
     } finally {
       setLoadingManageUsers(false);
     }
-  }, [manageUsersClient]);
+  }, [editingClient]);
 
   useEffect(() => {
-    if (showManageUsersModal && manageUsersClient) {
+    if (showModal && activeTab === "users" && editingClient) {
       fetchClientUsers();
     }
-  }, [showManageUsersModal, manageUsersClient, fetchClientUsers]);
+  }, [showModal, activeTab, editingClient, fetchClientUsers]);
 
   const handleAddUserToClient = async (userId: string) => {
-    if (!manageUsersClient) return;
+    if (!editingClient) return;
     try {
-      await clientsAPI.addUser(manageUsersClient._id, userId);
+      await clientsAPI.addUser(editingClient._id, userId);
       toast.success("User added to client");
       setUserSearchQuery("");
       setUserSearchResults([]);
@@ -204,10 +206,10 @@ export const Clients: React.FC = () => {
   };
 
   const handleRemoveUserFromClient = async (userId: string) => {
-    if (!manageUsersClient) return;
+    if (!editingClient) return;
     if (!confirm("Remove this user from the client?")) return;
     try {
-      await clientsAPI.removeUser(manageUsersClient._id, userId);
+      await clientsAPI.removeUser(editingClient._id, userId);
       toast.success("User removed from client");
       fetchClientUsers();
     } catch (error: any) {
@@ -220,7 +222,7 @@ export const Clients: React.FC = () => {
   );
 
   useEffect(() => {
-    if (!showManageUsersModal || !userSearchQuery.trim()) {
+    if (!showModal || activeTab !== "users" || !userSearchQuery.trim()) {
       setUserSearchResults([]);
       setUserSearchLoading(false);
       return;
@@ -244,7 +246,7 @@ export const Clients: React.FC = () => {
         clearTimeout(userSearchDebounceRef.current);
       }
     };
-  }, [showManageUsersModal, userSearchQuery]);
+  }, [showModal, activeTab, userSearchQuery]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -345,13 +347,6 @@ export const Clients: React.FC = () => {
                 </button>
                 <div className="absolute right-0 top-full mt-2 w-44 bg-secondary-800 border border-secondary-700/50 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                   <button
-                    onClick={() => openManageUsers(client)}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-secondary-300 hover:text-white hover:bg-secondary-700/50 transition-colors rounded-t-xl"
-                  >
-                    <Users className="w-4 h-4" />
-                    Manage Users
-                  </button>
-                  <button
                     onClick={() => handleEdit(client)}
                     className="w-full flex items-center gap-2 px-4 py-3 text-sm text-secondary-300 hover:text-white hover:bg-secondary-700/50 transition-colors"
                   >
@@ -417,223 +412,263 @@ export const Clients: React.FC = () => {
         }
         size="md"
         footer={
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={closeModal}
-              className="btn-secondary flex-1"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              form="client-form"
-              className="btn-primary flex-1"
-            >
-              {editingClient ? "Update Client" : "Create Client"}
-            </button>
-          </div>
-        }
-      >
-        <form id="client-form" onSubmit={handleSubmit} className="space-y-6">
-          <div className="glass-card p-4">
-            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
-              Client Information
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="input-field"
-                  placeholder="Client name"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Type
-                </label>
-                <select
-                  value={formData.type}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      type: e.target.value as ClientType,
-                    })
-                  }
-                  className="input-field"
-                  required
-                >
-                  {clientTypes.map((type) => (
-                    <option
-                      key={type}
-                      value={type}
-                      className="bg-secondary-800"
-                    >
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Classification
-                </label>
-                <input
-                  type="text"
-                  value={formData.classification}
-                  onChange={(e) =>
-                    setFormData({ ...formData, classification: e.target.value })
-                  }
-                  className="input-field"
-                  placeholder="e.g., Private, Government"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Address
-                </label>
-                <textarea
-                  value={formData.address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, address: e.target.value })
-                  }
-                  className="input-field min-h-[80px] resize-none"
-                  placeholder="Full address"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-        </form>
-      </SlideInModal>
-
-      {/* Manage Users Modal */}
-      {showManageUsersModal && manageUsersClient && (
-        <SlideInModal
-          isOpen={true}
-          onClose={closeManageUsersModal}
-          title={`Manage Users — ${manageUsersClient.name}`}
-          icon={Users}
-          iconColor="primary"
-          size="md"
-        >
-          {loadingManageUsers ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+          activeTab === "details" ? (
+            <div className="flex gap-3 w-full">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="client-form"
+                className="btn-primary flex-1"
+              >
+                {editingClient ? "Update Client" : "Create Client"}
+              </button>
             </div>
           ) : (
-            <>
-              <div className="mb-4 flex-shrink-0" ref={userAutocompleteRef}>
-                <label className="block text-sm font-medium text-secondary-300 mb-2">
-                  Add user to client
-                </label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={userSearchQuery}
-                    onChange={(e) => {
-                      setUserSearchQuery(e.target.value);
-                      setUserDropdownOpen(true);
-                    }}
-                    onFocus={() => setUserDropdownOpen(true)}
-                    placeholder="Search by name or email..."
-                    className="input-field pl-9 w-full"
-                    autoComplete="off"
-                  />
-                  {userDropdownOpen && (
-                    <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-secondary-800 border border-secondary-700/50 rounded-xl shadow-xl overflow-hidden max-h-56 overflow-y-auto">
-                      {userSearchLoading ? (
-                        <div className="flex items-center justify-center gap-2 py-4 text-secondary-400 text-sm">
-                          <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                          Searching...
-                        </div>
-                      ) : userSearchQuery.trim().length < 2 ? (
-                        <div className="py-4 px-4 text-secondary-400 text-sm text-center">
-                          Type at least 2 characters to search users
-                        </div>
-                      ) : userSearchResultsNotInClient.length === 0 ? (
-                        <div className="py-4 px-4 text-secondary-400 text-sm text-center">
-                          {userSearchResults.length === 0
-                            ? "No users found"
-                            : "All matching users are already in this client"}
-                        </div>
-                      ) : (
-                        userSearchResultsNotInClient.map((user) => (
-                          <button
-                            key={user._id}
-                            type="button"
-                            onClick={() => handleAddUserToClient(user._id)}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary-700/50 transition-colors border-b border-secondary-700/30 last:border-0"
-                          >
-                            <div className="p-1.5 rounded-lg bg-primary-500/20">
-                              <UserPlus className="w-4 h-4 text-primary-400" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-white font-medium truncate">
-                                {user.firstName} {user.lastName}
-                              </p>
-                              <p className="text-sm text-secondary-400 truncate">
-                                {user.email}
-                              </p>
-                            </div>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="border border-secondary-700/50 rounded-xl overflow-hidden flex-1 min-h-0">
-                <div className="max-h-64 overflow-y-auto divide-y divide-secondary-700/50">
-                  {clientUsers.length === 0 ? (
-                    <div className="py-8 text-center text-secondary-400 text-sm">
-                      No users assigned to this client yet.
-                    </div>
-                  ) : (
-                    clientUsers.map((user) => (
-                      <div
-                        key={user._id}
-                        className="flex items-center justify-between px-4 py-3 hover:bg-secondary-700/30 transition-colors"
-                      >
-                        <div>
-                          <p className="text-white font-medium">
-                            {user.firstName} {user.lastName}
-                          </p>
-                          <p className="text-sm text-secondary-400">
-                            {user.email}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveUserFromClient(user._id)}
-                          className="p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
-                          title="Remove from client"
-                        >
-                          <UserMinus className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </>
+            <div className="flex gap-3 w-full">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="btn-secondary flex-1"
+              >
+                Close
+              </button>
+            </div>
+          )
+        }
+      >
+        <div className="space-y-6">
+          {editingClient && (
+            <div className="flex bg-secondary-800/50 p-1 rounded-xl">
+              <button
+                onClick={() => setActiveTab("details")}
+                className={clsx(
+                  "flex-1 py-2 text-sm font-medium rounded-lg transition-all",
+                  activeTab === "details"
+                    ? "bg-secondary-700 text-white shadow-sm"
+                    : "text-secondary-400 hover:text-white hover:bg-secondary-700/50",
+                )}
+              >
+                Details
+              </button>
+              <button
+                onClick={() => setActiveTab("users")}
+                className={clsx(
+                  "flex-1 py-2 text-sm font-medium rounded-lg transition-all",
+                  activeTab === "users"
+                    ? "bg-secondary-700 text-white shadow-sm"
+                    : "text-secondary-400 hover:text-white hover:bg-secondary-700/50",
+                )}
+              >
+                Users
+              </button>
+            </div>
           )}
-        </SlideInModal>
-      )}
+
+          <div className={activeTab === "details" ? "block" : "hidden"}>
+            <form
+              id="client-form"
+              onSubmit={handleSubmit}
+              className="space-y-6"
+            >
+              <div className="glass-card p-4">
+                <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+                  Client Information
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-300 mb-2">
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      className="input-field"
+                      placeholder="Client name"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-300 mb-2">
+                      Type
+                    </label>
+                    <select
+                      value={formData.type}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          type: e.target.value as ClientType,
+                        })
+                      }
+                      className="input-field"
+                      required
+                    >
+                      {clientTypes.map((type) => (
+                        <option
+                          key={type}
+                          value={type}
+                          className="bg-secondary-800"
+                        >
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-300 mb-2">
+                      Classification
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.classification}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          classification: e.target.value,
+                        })
+                      }
+                      className="input-field"
+                      placeholder="e.g., Private, Government"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-300 mb-2">
+                      Address
+                    </label>
+                    <textarea
+                      value={formData.address}
+                      onChange={(e) =>
+                        setFormData({ ...formData, address: e.target.value })
+                      }
+                      className="input-field min-h-[80px] resize-none"
+                      placeholder="Full address"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <div className={activeTab === "users" ? "block space-y-4" : "hidden"}>
+            {loadingManageUsers ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <>
+                <div className="mb-4 flex-shrink-0" ref={userAutocompleteRef}>
+                  <label className="block text-sm font-medium text-secondary-300 mb-2">
+                    Add user to client
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={userSearchQuery}
+                      onChange={(e) => {
+                        setUserSearchQuery(e.target.value);
+                        setUserDropdownOpen(true);
+                      }}
+                      onFocus={() => setUserDropdownOpen(true)}
+                      placeholder="Search by name or email..."
+                      className="input-field pl-9 w-full"
+                      autoComplete="off"
+                    />
+                    {userDropdownOpen && (
+                      <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-secondary-800 border border-secondary-700/50 rounded-xl shadow-xl overflow-hidden max-h-56 overflow-y-auto">
+                        {userSearchLoading ? (
+                          <div className="flex items-center justify-center gap-2 py-4 text-secondary-400 text-sm">
+                            <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                            Searching...
+                          </div>
+                        ) : userSearchQuery.trim().length < 2 ? (
+                          <div className="py-4 px-4 text-secondary-400 text-sm text-center">
+                            Type at least 2 characters to search users
+                          </div>
+                        ) : userSearchResultsNotInClient.length === 0 ? (
+                          <div className="py-4 px-4 text-secondary-400 text-sm text-center">
+                            {userSearchResults.length === 0
+                              ? "No users found"
+                              : "All matching users are already in this client"}
+                          </div>
+                        ) : (
+                          userSearchResultsNotInClient.map((user) => (
+                            <button
+                              key={user._id}
+                              type="button"
+                              onClick={() => handleAddUserToClient(user._id)}
+                              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary-700/50 transition-colors border-b border-secondary-700/30 last:border-0"
+                            >
+                              <div className="p-1.5 rounded-lg bg-primary-500/20">
+                                <UserPlus className="w-4 h-4 text-primary-400" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-white font-medium truncate">
+                                  {user.firstName} {user.lastName}
+                                </p>
+                                <p className="text-sm text-secondary-400 truncate">
+                                  {user.email}
+                                </p>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border border-secondary-700/50 rounded-xl overflow-hidden flex-1 min-h-0">
+                  <div className="overflow-y-auto divide-y divide-secondary-700/50">
+                    {clientUsers.length === 0 ? (
+                      <div className="py-8 text-center text-secondary-400 text-sm">
+                        No users assigned to this client yet.
+                      </div>
+                    ) : (
+                      clientUsers.map((user) => (
+                        <div
+                          key={user._id}
+                          className="flex items-center justify-between px-4 py-3 hover:bg-secondary-700/30 transition-colors"
+                        >
+                          <div>
+                            <p className="text-white font-medium">
+                              {user.firstName} {user.lastName}
+                            </p>
+                            <p className="text-sm text-secondary-400">
+                              {user.email}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveUserFromClient(user._id)}
+                            className="p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                            title="Remove from client"
+                          >
+                            <UserMinus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </SlideInModal>
 
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
