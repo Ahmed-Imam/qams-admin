@@ -1,5 +1,9 @@
 import axiosInstance from "./axiosInstance";
-import type { Department, CreateDepartmentDto, PaginatedResponse } from "../types";
+import type {
+  Department,
+  CreateDepartmentDto,
+  PaginatedResponse,
+} from "../types";
 
 interface ApiResponse<T> {
   statusCode: number;
@@ -10,18 +14,26 @@ interface GetDepartmentsParams {
   page?: number;
   limit?: number;
   clientId?: string;
+  search?: string;
 }
 
 const unwrapResponse = <T>(response: { data: ApiResponse<T> | T }): T => {
   const data = response.data;
-  if (data && typeof data === 'object' && 'statusCode' in data && 'data' in data) {
+  if (
+    data &&
+    typeof data === "object" &&
+    "statusCode" in data &&
+    "data" in data
+  ) {
     return (data as ApiResponse<T>).data;
   }
   return data as T;
 };
 
 export const departmentsAPI = {
-  getAll: async (params?: GetDepartmentsParams): Promise<PaginatedResponse<Department>> => {
+  getAll: async (
+    params?: GetDepartmentsParams,
+  ): Promise<PaginatedResponse<Department> | Department[]> => {
     const response = await axiosInstance.get("/departments", { params });
     return unwrapResponse(response);
   },
@@ -36,7 +48,10 @@ export const departmentsAPI = {
     return unwrapResponse(response);
   },
 
-  update: async (id: string, data: Partial<CreateDepartmentDto>): Promise<Department> => {
+  update: async (
+    id: string,
+    data: Partial<CreateDepartmentDto>,
+  ): Promise<Department> => {
     const response = await axiosInstance.patch(`/departments/${id}`, data);
     return unwrapResponse(response);
   },

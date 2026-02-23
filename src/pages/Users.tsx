@@ -11,24 +11,41 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  Building2
+  Building2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { usersAPI } from "../api/users";
 import { rolesAPI } from "../api/roles";
 import { departmentsAPI } from "../api/departments";
-import type { User, CreateUserDto, Role, Department, UserStatus } from "../types";
+import { clientsAPI } from "../api/clients";
+import type {
+  User,
+  CreateUserDto,
+  Role,
+  Department,
+  Client,
+  UserStatus,
+} from "../types";
 import clsx from "clsx";
+import { ConfirmationModal } from "../components/ConfirmationModal";
+import { SlideInModal } from "../components/SlideInModal";
 
-const userStatuses: UserStatus[] = ["active", "invited", "inactive", "suspended"];
+const userStatuses: UserStatus[] = [
+  "active",
+  "invited",
+  "inactive",
+  "suspended",
+];
 
 export const Users: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [clientFilter, setClientFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
@@ -41,30 +58,40 @@ export const Users: React.FC = () => {
     lastName: "",
     email: "",
     password: "",
-    role: "",
-    department: "",
+    roleId: "",
+    departmentId: "",
     status: "invited",
     isSuperAdmin: false,
   });
 
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [usersRes, rolesRes, deptsRes] = await Promise.all([
-        usersAPI.getAll({ 
-          page, 
-          limit, 
-          search: searchQuery, 
-          status: statusFilter !== 'all' ? statusFilter : undefined 
+      const [usersRes, rolesRes, deptsRes, clientsRes] = await Promise.all([
+        usersAPI.getAll({
+          page,
+          limit,
+          search: searchQuery,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+          clientId: clientFilter !== "all" ? clientFilter : undefined,
         }),
         rolesAPI.getAll({ limit: 100 }),
         departmentsAPI.getAll({ limit: 100 }),
+        clientsAPI.getAll({ limit: 100 }),
       ]);
       setUsers(usersRes.data || []);
       setTotalPages(usersRes.totalPages || 1);
       setTotalUsers(usersRes.total || 0);
-      setRoles(rolesRes?.data || []);
-      setDepartments(deptsRes?.data || []);
+      setRoles(Array.isArray(rolesRes) ? rolesRes : rolesRes?.data || []);
+      setDepartments(Array.isArray(deptsRes) ? deptsRes : deptsRes?.data || []);
+      setClients(Array.isArray(clientsRes) ? clientsRes : []);
     } catch (error) {
       toast.error("Failed to fetch data");
     } finally {
@@ -77,9 +104,7 @@ export const Users: React.FC = () => {
       fetchData();
     }, 300);
     return () => clearTimeout(timer);
-  }, [page, limit, searchQuery, statusFilter]);
-
-
+  }, [page, limit, searchQuery, statusFilter, clientFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,22 +131,31 @@ export const Users: React.FC = () => {
       lastName: user.lastName,
       email: user.email,
       password: "",
-      role: typeof user.role === "object" ? user.role._id : user.role,
-      department: typeof user.department === "object" ? user.department._id : user.department,
+      roleId: typeof user.role === "object" ? user.role._id : user.role,
+      departmentId:
+        typeof user.department === "object"
+          ? user.department._id
+          : user.department,
       status: user.status,
       isSuperAdmin: user.isSuperAdmin || false,
     });
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
+  const openDeleteConfirm = (id: string, name: string) => {
+    setUserToDelete({ id, name });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!userToDelete) return;
     try {
-      await usersAPI.delete(id);
+      await usersAPI.delete(userToDelete.id);
       toast.success("User deleted successfully");
       fetchData();
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Failed to delete user");
+      throw error; // Re-throw to keep modal open on error
     }
   };
 
@@ -133,8 +167,8 @@ export const Users: React.FC = () => {
       lastName: "",
       email: "",
       password: "",
-      role: "",
-      department: "",
+      roleId: "",
+      departmentId: "",
       status: "invited",
       isSuperAdmin: false,
     });
@@ -150,10 +184,47 @@ export const Users: React.FC = () => {
     return styles[status] || "badge-info";
   };
 
-  if (loading) {
+  if (loading && users.length === 0) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-6 animate-fadeIn">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="h-8 w-32 bg-secondary-800 rounded animate-pulse mb-2"></div>
+            <div className="h-4 w-64 bg-secondary-800 rounded animate-pulse"></div>
+          </div>
+          <div className="h-10 w-32 bg-secondary-800 rounded animate-pulse"></div>
+        </div>
+        <div className="glass-card p-4 flex flex-col sm:flex-row gap-4">
+          <div className="h-10 flex-1 bg-secondary-800 rounded animate-pulse"></div>
+          <div className="h-10 w-40 bg-secondary-800 rounded animate-pulse"></div>
+        </div>
+        <div className="glass-card overflow-hidden">
+          <div className="p-4 border-b border-secondary-700/50 flex gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="h-6 flex-1 bg-secondary-800 rounded animate-pulse"
+              ></div>
+            ))}
+          </div>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="p-4 border-b border-secondary-700/30 flex gap-4"
+            >
+              <div className="flex items-center gap-3 flex-1">
+                <div className="w-10 h-10 rounded-full bg-secondary-800 animate-pulse"></div>
+                <div className="h-5 w-24 bg-secondary-800 rounded animate-pulse"></div>
+              </div>
+              {[1, 2, 3, 4, 5].map((j) => (
+                <div
+                  key={j}
+                  className="h-5 flex-1 bg-secondary-800 rounded animate-pulse mt-2"
+                ></div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -164,9 +235,14 @@ export const Users: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Users</h1>
-          <p className="text-secondary-400">Manage system users and super admins</p>
+          <p className="text-secondary-400">
+            Manage system users and super admins
+          </p>
         </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
+        <button
+          onClick={() => setShowModal(true)}
+          className="btn-primary flex items-center gap-2"
+        >
           <Plus className="w-5 h-5" />
           Add User
         </button>
@@ -181,8 +257,16 @@ export const Users: React.FC = () => {
             placeholder="Search users..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10"
+            className="input-field pl-10 pr-10"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-secondary-500 hover:text-white hover:bg-secondary-700 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
         <div className="relative">
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
@@ -191,10 +275,37 @@ export const Users: React.FC = () => {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="input-field pl-10 pr-8 min-w-[150px]"
           >
-            <option value="all" className="bg-secondary-800">All Status</option>
+            <option value="all" className="bg-secondary-800">
+              All Status
+            </option>
             {userStatuses.map((status) => (
-              <option key={status} value={status} className="bg-secondary-800 capitalize">
+              <option
+                key={status}
+                value={status}
+                className="bg-secondary-800 capitalize"
+              >
                 {status.charAt(0).toUpperCase() + status.slice(1)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="relative">
+          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
+          <select
+            value={clientFilter}
+            onChange={(e) => setClientFilter(e.target.value)}
+            className="input-field pl-10 pr-8 min-w-[150px]"
+          >
+            <option value="all" className="bg-secondary-800">
+              All Clients
+            </option>
+            {clients.map((client) => (
+              <option
+                key={client._id}
+                value={client._id}
+                className="bg-secondary-800"
+              >
+                {client.name}
               </option>
             ))}
           </select>
@@ -202,11 +313,16 @@ export const Users: React.FC = () => {
       </div>
 
       {/* Users Table */}
-      <div className="glass-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-secondary-700/50">
+      <div className="glass-card flex flex-col h-[calc(100vh-18rem)]">
+        {loading && users.length > 0 && (
+          <div className="absolute top-0 left-0 w-full h-1 bg-secondary-800 overflow-hidden z-20 rounded-t-xl">
+            <div className="h-full bg-primary-500 w-1/3 animate-[slide_1.5s_ease-in-out_infinite]"></div>
+          </div>
+        )}
+        <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar rounded-t-2xl">
+          <table className="w-full relative">
+            <thead className="sticky top-0 z-10 bg-secondary-900/95 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
+              <tr>
                 <th className="table-header">User</th>
                 <th className="table-header">Email</th>
                 <th className="table-header">Type</th>
@@ -226,7 +342,8 @@ export const Users: React.FC = () => {
                   <td className="table-cell">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
-                        {(user.firstName || "?")[0]}{(user.lastName || "?")[0]}
+                        {(user.firstName || "?")[0]}
+                        {(user.lastName || "?")[0]}
                       </div>
                       <span className="font-medium text-white">
                         {user.firstName} {user.lastName}
@@ -247,10 +364,14 @@ export const Users: React.FC = () => {
                   <td className="table-cell">
                     <div className="flex flex-col">
                       <span className="text-primary-400 text-xs font-medium">
-                        {user.role && typeof user.role === "object" ? user.role.name : "N/A"}
+                        {user.role && typeof user.role === "object"
+                          ? user.role.name
+                          : "N/A"}
                       </span>
                       <span className="text-secondary-500 text-[10px]">
-                        {user.department && typeof user.department === "object" ? user.department.name : "N/A"}
+                        {user.department && typeof user.department === "object"
+                          ? user.department.name
+                          : "N/A"}
                       </span>
                     </div>
                   </td>
@@ -258,18 +379,27 @@ export const Users: React.FC = () => {
                     <div className="flex flex-wrap gap-1">
                       {user.clients && user.clients.length > 0 ? (
                         user.clients.map((client: any, idx) => (
-                          <span key={idx} className="px-2 py-1 rounded bg-secondary-800 text-xs text-secondary-300 flex items-center gap-1">
+                          <span
+                            key={idx}
+                            className="px-2 py-1 rounded bg-secondary-800 text-xs text-secondary-300 flex items-center gap-1"
+                          >
                             <Building2 className="w-3 h-3" />
-                            {typeof client === 'object' ? client.name : 'Unknown Client'}
+                            {typeof client === "object"
+                              ? client.name
+                              : "Unknown Client"}
                           </span>
                         ))
                       ) : (
-                        <span className="text-secondary-500 text-xs text-italic">No Clients</span>
+                        <span className="text-secondary-500 text-xs text-italic">
+                          No Clients
+                        </span>
                       )}
                     </div>
                   </td>
                   <td className="table-cell">
-                    <span className={getStatusBadge(user.status)}>{user.status}</span>
+                    <span className={getStatusBadge(user.status)}>
+                      {user.status}
+                    </span>
                   </td>
                   <td className="table-cell text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -280,7 +410,12 @@ export const Users: React.FC = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(user._id)}
+                        onClick={() =>
+                          openDeleteConfirm(
+                            user._id,
+                            `${user.firstName} ${user.lastName}`,
+                          )
+                        }
                         className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -293,7 +428,7 @@ export const Users: React.FC = () => {
           </table>
 
           {users.length === 0 && !loading && (
-            <div className="text-center py-12">
+            <div className="text-center py-12 ">
               <UsersIcon className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
               <p className="text-secondary-400">No users found</p>
             </div>
@@ -301,11 +436,18 @@ export const Users: React.FC = () => {
         </div>
 
         {/* Pagination Controls */}
-        <div className="p-4 border-t border-secondary-700/30 flex items-center justify-between">
+        <div className="p-4 border-t border-secondary-700/30 flex items-center justify-between shrink-0 bg-secondary-900/50">
           <p className="text-sm text-secondary-400">
-            Showing <span className="font-medium text-white">{users.length > 0 ? (page - 1) * limit + 1 : 0}</span> to{" "}
-            <span className="font-medium text-white">{Math.min(page * limit, totalUsers)}</span> of{" "}
-            <span className="font-medium text-white">{totalUsers}</span> results
+            Showing{" "}
+            <span className="font-medium text-white">
+              {users.length > 0 ? (page - 1) * limit + 1 : 0}
+            </span>{" "}
+            to{" "}
+            <span className="font-medium text-white">
+              {Math.min(page * limit, totalUsers)}
+            </span>{" "}
+            of <span className="font-medium text-white">{totalUsers}</span>{" "}
+            results
           </p>
 
           <div className="flex items-center gap-2">
@@ -316,17 +458,17 @@ export const Users: React.FC = () => {
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            
+
             <div className="flex items-center gap-1">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let p = i + 1;
                 if (totalPages > 5) {
-                   if (page > 3) p = page - 2 + i;
-                   if (p > totalPages) p = totalPages - (4 - i);
-                   // Create a valid range, ensuring we don't go below 1
-                   if (p < 1) p = i + 1; 
+                  if (page > 3) p = page - 2 + i;
+                  if (p > totalPages) p = totalPages - (4 - i);
+                  // Create a valid range, ensuring we don't go below 1
+                  if (p < 1) p = i + 1;
                 }
-                
+
                 return (
                   <button
                     key={p}
@@ -335,7 +477,7 @@ export const Users: React.FC = () => {
                       "w-8 h-8 rounded-lg text-sm font-medium transition-colors",
                       page === p
                         ? "bg-primary-600 text-white"
-                        : "hover:bg-secondary-700 text-secondary-400 hover:text-white"
+                        : "hover:bg-secondary-700 text-secondary-400 hover:text-white",
                     )}
                   >
                     {p}
@@ -355,52 +497,96 @@ export const Users: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="glass-card w-full max-w-lg p-6 animate-fadeIn max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">
-                {editingUser ? "Edit User" : "Add New User"}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    className="input-field"
-                    placeholder="First name"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    className="input-field"
-                    placeholder="Last name"
-                    required
-                  />
-                </div>
+      {/* Modal - Slide-in Panel */}
+      <SlideInModal
+        isOpen={showModal}
+        onClose={closeModal}
+        title={editingUser ? "Edit User" : "Add New User"}
+        icon={UsersIcon}
+        iconColor={editingUser ? "amber" : "primary"}
+        badges={[
+          ...(editingUser
+            ? [
+                {
+                  label: editingUser.email || "No Email",
+                  variant: "default" as const,
+                },
+              ]
+            : []),
+          { label: formData.status || "invited", variant: "default" as const },
+          ...(formData.isSuperAdmin
+            ? [{ label: "Super Admin", variant: "primary" as const }]
+            : []),
+        ]}
+        size="md"
+        footer={
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="btn-secondary flex-1"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              onClick={handleSubmit}
+              className="btn-primary flex-1"
+            >
+              {editingUser ? "Update User" : "Create User"}
+            </button>
+          </div>
+        }
+      >
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Name Fields */}
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Personal Information
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.firstName}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      firstName: e.target.value,
+                    })
+                  }
+                  className="input-field"
+                  placeholder="First name"
+                  required
+                />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.lastName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lastName: e.target.value })
+                  }
+                  className="input-field"
+                  placeholder="Last name"
+                  required
+                />
+              </div>
+            </div>
+          </div>
 
+          {/* Account Information */}
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Account Information
+            </h3>
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-secondary-300 mb-2">
                   Email
@@ -408,7 +594,9 @@ export const Users: React.FC = () => {
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   className="input-field"
                   placeholder="Email address"
                   required
@@ -423,109 +611,167 @@ export const Users: React.FC = () => {
                   <input
                     type="password"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        password: e.target.value,
+                      })
+                    }
                     className="input-field"
                     placeholder="Password"
                     required={!editingUser}
                   />
                 </div>
               )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Role
-                  </label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="input-field"
-                    required
-                  >
-                    <option value="" className="bg-secondary-800">Select a role</option>
-                    {roles.map((role) => (
-                      <option key={role._id} value={role._id} className="bg-secondary-800">
-                        {role.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Department
-                  </label>
-                  <select
-                    value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    className="input-field"
-                    required
-                  >
-                    <option value="" className="bg-secondary-800">Select a department</option>
-                    {departments.map((dept) => (
-                      <option key={dept._id} value={dept._id} className="bg-secondary-800">
-                        {dept.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-secondary-300 mb-2">
-                    Status
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as UserStatus })}
-                    className="input-field"
-                  >
-                    {userStatuses.map((status) => (
-                      <option key={status} value={status} className="bg-secondary-800 capitalize">
-                        {status.charAt(0).toUpperCase() + status.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex items-end">
-                  <div 
-                    onClick={() => setFormData({ ...formData, isSuperAdmin: !formData.isSuperAdmin })}
-                    className={clsx(
-                      "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border cursor-pointer transition-all duration-200",
-                      formData.isSuperAdmin 
-                        ? "bg-amber-500/20 border-amber-500/50 text-amber-400"
-                        : "bg-secondary-800/80 border-secondary-600/50 text-secondary-400 hover:bg-secondary-700"
-                    )}
-                  >
-                    <Shield className={clsx("w-4 h-4", formData.isSuperAdmin && "animate-pulse")} />
-                    <span className="text-sm font-medium">Super Admin</span>
-                  </div>
-                </div>
-              </div>
-
-              {formData.isSuperAdmin && (
-                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex gap-3">
-                  <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
-                  <p className="text-xs text-amber-300/80 leading-relaxed">
-                    Warning: Super Admins have full access to the administration portal and all system data across all clients.
-                  </p>
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-4">
-                <button type="button" onClick={closeModal} className="btn-secondary flex-1">
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary flex-1">
-                  {editingUser ? "Update" : "Create"}
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
+
+          {/* Role & Department */}
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Organization
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Role
+                </label>
+                <select
+                  value={formData.roleId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, roleId: e.target.value })
+                  }
+                  className="input-field"
+                  required
+                >
+                  <option value="" className="bg-secondary-800">
+                    Select a role
+                  </option>
+                  {roles.map((role) => (
+                    <option
+                      key={role._id}
+                      value={role._id}
+                      className="bg-secondary-800"
+                    >
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Department
+                </label>
+                <select
+                  value={formData.departmentId}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      departmentId: e.target.value,
+                    })
+                  }
+                  className="input-field"
+                  required
+                >
+                  <option value="" className="bg-secondary-800">
+                    Select a department
+                  </option>
+                  {departments.map((dept) => (
+                    <option
+                      key={dept._id}
+                      value={dept._id}
+                      className="bg-secondary-800"
+                    >
+                      {dept.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Status & Permissions */}
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Status & Permissions
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Status
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      status: e.target.value as UserStatus,
+                    })
+                  }
+                  className="input-field"
+                >
+                  {userStatuses.map((status) => (
+                    <option
+                      key={status}
+                      value={status}
+                      className="bg-secondary-800 capitalize"
+                    >
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                <div
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      isSuperAdmin: !formData.isSuperAdmin,
+                    })
+                  }
+                  className={clsx(
+                    "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border cursor-pointer transition-all duration-200",
+                    formData.isSuperAdmin
+                      ? "bg-amber-500/20 border-amber-500/50 text-amber-400"
+                      : "bg-secondary-800/80 border-secondary-600/50 text-secondary-400 hover:bg-secondary-700",
+                  )}
+                >
+                  <Shield
+                    className={clsx(
+                      "w-4 h-4",
+                      formData.isSuperAdmin && "animate-pulse",
+                    )}
+                  />
+                  <span className="text-sm font-medium">Super Admin</span>
+                </div>
+              </div>
+            </div>
+
+            {formData.isSuperAdmin && (
+              <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+                <p className="text-xs text-amber-300/80 leading-relaxed">
+                  Warning: Super Admins have full access to the administration
+                  portal and all system data across all clients.
+                </p>
+              </div>
+            )}
+          </div>
+        </form>
+      </SlideInModal>
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete User"
+        message="Are you sure you want to delete this user? This action cannot be undone."
+        itemName={userToDelete?.name}
+        confirmText="Delete User"
+        variant="danger"
+      />
     </div>
   );
 };
