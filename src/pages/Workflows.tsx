@@ -1,14 +1,9 @@
-import {
-  Edit,
-  GripVertical,
-  Plus,
-  Search,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Edit, GripVertical, Plus, Search, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { workflowsAPI } from "../api/workflows";
+import { ConfirmationModal } from "../components/ConfirmationModal";
+import { SlideInModal } from "../components/SlideInModal";
 import type {
   CreateWorkflowDto,
   CreateWorkflowStepDto,
@@ -62,6 +57,8 @@ export const Workflows: React.FC = () => {
   const [formData, setFormData] = useState<
     CreateWorkflowDto & { steps: CreateWorkflowStepDto[] }
   >(getInitialFormData());
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [workflowToDelete, setWorkflowToDelete] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -133,11 +130,18 @@ export const Workflows: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this workflow?")) return;
+  const openDeleteConfirm = (id: string) => {
+    setWorkflowToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!workflowToDelete) return;
     try {
-      await workflowsAPI.delete(id);
+      await workflowsAPI.delete(workflowToDelete);
       toast.success("Workflow deleted successfully");
+      setDeleteConfirmOpen(false);
+      setWorkflowToDelete(null);
       fetchData();
     } catch (error: any) {
       toast.error(
@@ -250,7 +254,7 @@ export const Workflows: React.FC = () => {
                   <Edit className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => handleDelete(workflow._id)}
+                  onClick={() => openDeleteConfirm(workflow._id)}
                   className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -286,24 +290,49 @@ export const Workflows: React.FC = () => {
         </div>
       </div>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="glass-card w-full max-w-2xl p-6 animate-fadeIn my-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">
-                {editingWorkflow
-                  ? "Edit Workflow"
-                  : "Add New Workflow (Common)"}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+      <SlideInModal
+        isOpen={showModal}
+        onClose={closeModal}
+        title={
+          editingWorkflow ? "Edit Workflow" : "Add New Workflow (Common)"
+        }
+        icon={GripVertical}
+        iconColor="primary"
+        badges={
+          editingWorkflow
+            ? [{ label: editingWorkflow.name, variant: "default" }]
+            : []
+        }
+        size="lg"
+        footer={
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="btn-secondary flex-1"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="workflow-form"
+              className="btn-primary flex-1"
+            >
+              {editingWorkflow ? "Update Workflow" : "Create Workflow"}
+            </button>
+          </div>
+        }
+      >
+        <form
+          id="workflow-form"
+          onSubmit={handleSubmit}
+          className="space-y-6"
+        >
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Basic Information
+            </h3>
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-secondary-300 mb-2">
                   Name
@@ -352,136 +381,136 @@ export const Workflows: React.FC = () => {
                   <option value="paused">Paused</option>
                 </select>
               </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-secondary-300">
-                    Steps
-                  </label>
-                  <button
-                    type="button"
-                    onClick={addStep}
-                    className="text-sm text-primary-400 hover:text-primary-300"
-                  >
-                    + Add step
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  {formData.steps.map((step, stepIndex) => (
-                    <div
-                      key={stepIndex}
-                      className="p-4 rounded-lg bg-secondary-800/50 border border-secondary-700 space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-secondary-300">
-                          Step {stepIndex + 1}
-                        </span>
-                        {formData.steps.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeStep(stepIndex)}
-                            className="text-red-400 hover:text-red-300 text-sm"
-                          >
-                            Remove
-                          </button>
-                        )}
-                      </div>
-                      <input
-                        type="text"
-                        value={step.name}
-                        onChange={(e) =>
-                          updateStep(stepIndex, "name", e.target.value)
-                        }
-                        className="input-field"
-                        placeholder="Step name"
-                        required
-                      />
-                      <div>
-                        <label className="block text-xs text-secondary-400 mb-1">
-                          Action
-                        </label>
-                        <select
-                          value={step.action}
-                          onChange={(e) =>
-                            updateStep(
-                              stepIndex,
-                              "action",
-                              e.target.value as WorkflowStepAction
-                            )
-                          }
-                          className="input-field"
-                        >
-                          {ACTIONS.map((a) => (
-                            <option key={a} value={a}>
-                              {ACTION_LABELS[a]}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs text-secondary-400 mb-1">
-                          Role type (common workflow)
-                        </label>
-                        <select
-                          value={step.roleType ?? "staff"}
-                          onChange={(e) =>
-                            updateStep(
-                              stepIndex,
-                              "roleType",
-                              e.target.value as WorkflowStepRoleType
-                            )
-                          }
-                          className="input-field"
-                        >
-                          {ROLE_TYPES.map((r) => (
-                            <option key={r} value={r}>
-                              {ROLE_TYPE_LABELS[r]}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs text-secondary-400 mb-1">
-                          Options
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {OPTIONS.map((opt) => (
-                            <button
-                              key={opt}
-                              type="button"
-                              onClick={() => toggleOption(stepIndex, opt)}
-                              className={`px-2 py-1 rounded text-xs ${
-                                (step.options ?? []).includes(opt)
-                                  ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
-                                  : "bg-secondary-700/50 text-secondary-400 border border-secondary-600"
-                              }`}
-                            >
-                              {OPTION_LABELS[opt]}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="btn-secondary flex-1"
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary flex-1">
-                  {editingWorkflow ? "Update" : "Create"}
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
+
+          <div className="glass-card p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                Steps
+              </h3>
+              <button
+                type="button"
+                onClick={addStep}
+                className="text-sm text-primary-400 hover:text-primary-300"
+              >
+                + Add step
+              </button>
+            </div>
+            <div className="space-y-4">
+              {formData.steps.map((step, stepIndex) => (
+                <div
+                  key={stepIndex}
+                  className="p-4 rounded-lg bg-secondary-800/50 border border-secondary-700 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-secondary-300">
+                      Step {stepIndex + 1}
+                    </span>
+                    {formData.steps.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeStep(stepIndex)}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={step.name}
+                    onChange={(e) =>
+                      updateStep(stepIndex, "name", e.target.value)
+                    }
+                    className="input-field"
+                    placeholder="Step name"
+                    required
+                  />
+                  <div>
+                    <label className="block text-xs text-secondary-400 mb-1">
+                      Action
+                    </label>
+                    <select
+                      value={step.action}
+                      onChange={(e) =>
+                        updateStep(
+                          stepIndex,
+                          "action",
+                          e.target.value as WorkflowStepAction
+                        )
+                      }
+                      className="input-field"
+                    >
+                      {ACTIONS.map((a) => (
+                        <option key={a} value={a}>
+                          {ACTION_LABELS[a]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-secondary-400 mb-1">
+                      Role
+                    </label>
+                    <select
+                      value={step.roleType ?? "staff"}
+                      onChange={(e) =>
+                        updateStep(
+                          stepIndex,
+                          "roleType",
+                          e.target.value as WorkflowStepRoleType
+                        )
+                      }
+                      className="input-field"
+                    >
+                      {ROLE_TYPES.map((r) => (
+                        <option key={r} value={r}>
+                          {ROLE_TYPE_LABELS[r]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-secondary-400 mb-1">
+                      Options
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {OPTIONS.map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => toggleOption(stepIndex, opt)}
+                          className={`px-2 py-1 rounded text-xs ${
+                            (step.options ?? []).includes(opt)
+                              ? "bg-primary-500/30 text-primary-300 border border-primary-500/50"
+                              : "bg-secondary-700/50 text-secondary-400 border border-secondary-600"
+                          }`}
+                        >
+                          {OPTION_LABELS[opt]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </form>
+      </SlideInModal>
+
+      <ConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setWorkflowToDelete(null);
+        }}
+        onConfirm={handleDelete}
+        title="Delete Workflow"
+        message="Are you sure you want to delete this workflow? This action cannot be undone."
+        confirmText="Delete Workflow"
+        variant="danger"
+      />
     </div>
   );
 };
