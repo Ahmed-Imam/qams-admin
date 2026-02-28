@@ -7,6 +7,7 @@ import {
   FileStack,
   FileText,
   FolderTree,
+  GitBranch,
   HelpCircle,
   History,
   LayoutDashboard,
@@ -59,6 +60,11 @@ const navItems: NavItem[] = [
     path: "/document-types",
     label: "Document Types",
     icon: <FileStack className="w-5 h-5" />,
+  },
+  {
+    path: "/workflows",
+    label: "Workflows",
+    icon: <GitBranch className="w-5 h-5" />,
   },
   {
     path: "/forms",

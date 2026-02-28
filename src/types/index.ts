@@ -296,6 +296,57 @@ export interface WorkflowRef {
   description?: string;
 }
 
+// Workflow step (match qams-api)
+export type WorkflowStepAction = "review" | "approve" | "acknowledge";
+export type WorkflowStepOption = "required" | "notify" | "editable";
+export type WorkflowStepRoleType = "admin" | "staff";
+
+export interface WorkflowStep {
+  _id?: string;
+  name: string;
+  role?: string;
+  roleType?: WorkflowStepRoleType;
+  action: WorkflowStepAction;
+  options: WorkflowStepOption[];
+}
+
+export type WorkflowStatus = "active" | "paused";
+
+export interface Workflow {
+  _id: string;
+  client?: string | null;
+  name: string;
+  description?: string;
+  initialStatus: WorkflowStatus;
+  steps: WorkflowStep[];
+  createdBy?: string;
+  updatedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateWorkflowStepDto {
+  name: string;
+  role?: string;
+  roleType?: WorkflowStepRoleType;
+  action: WorkflowStepAction;
+  options: WorkflowStepOption[];
+}
+
+export interface CreateWorkflowDto {
+  name: string;
+  description?: string;
+  initialStatus?: WorkflowStatus;
+  steps: CreateWorkflowStepDto[];
+}
+
+export interface UpdateWorkflowDto {
+  name?: string;
+  description?: string;
+  initialStatus?: WorkflowStatus;
+  steps?: CreateWorkflowStepDto[];
+}
+
 export interface DocumentType {
   _id: string;
   client?: string | null;
@@ -322,7 +373,7 @@ export interface CreateDocumentTypeDto {
   rules?: DocumentTypeRule[];
   integrationSettings?: DocumentTypeIntegration[];
   reviewCycle: number;
-  workflow: string;
+  workflow?: string;
 }
 
 export interface UpdateDocumentTypeDto {

@@ -1,10 +1,11 @@
 import { Edit, FileStack, Plus, Search, Trash2, X } from "lucide-react";
-import { SlideInModal } from "../components/SlideInModal";
-import { ConfirmationModal } from "../components/ConfirmationModal";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { documentTypesAPI } from "../api/documentTypes";
-import type { CreateDocumentTypeDto, DocumentType } from "../types";
+import { workflowsAPI } from "../api/workflows";
+import { ConfirmationModal } from "../components/ConfirmationModal";
+import { SlideInModal } from "../components/SlideInModal";
+import type { CreateDocumentTypeDto, DocumentType, Workflow } from "../types";
 import { DocumentTypeIntegration, DocumentTypeRule } from "../types";
 
 const RULE_LABELS: Record<string, string> = {
@@ -39,6 +40,7 @@ const getInitialFormData = (): CreateDocumentTypeDto => ({
 
 export const DocumentTypes: React.FC = () => {
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -52,8 +54,12 @@ export const DocumentTypes: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const typesRes = await documentTypesAPI.getAllCommon();
+      const [typesRes, workflowsRes] = await Promise.all([
+        documentTypesAPI.getAllCommon(),
+        workflowsAPI.getAllCommon(),
+      ]);
       setDocumentTypes(Array.isArray(typesRes) ? typesRes : []);
+      setWorkflows(Array.isArray(workflowsRes) ? workflowsRes : []);
     } catch (error) {
       toast.error("Failed to fetch data");
     } finally {
@@ -82,6 +88,7 @@ export const DocumentTypes: React.FC = () => {
           rules: formData.rules,
           integrationSettings: formData.integrationSettings,
           reviewCycle: formData.reviewCycle,
+          workflow: formData.workflow || undefined,
         });
         toast.success("Document type updated successfully");
       } else {
@@ -93,6 +100,7 @@ export const DocumentTypes: React.FC = () => {
           rules: formData.rules,
           integrationSettings: formData.integrationSettings,
           reviewCycle: formData.reviewCycle,
+          workflow: formData.workflow || undefined,
         } as unknown as CreateDocumentTypeDto);
         toast.success("Document type created successfully");
       }
@@ -105,6 +113,10 @@ export const DocumentTypes: React.FC = () => {
 
   const handleEdit = (doc: DocumentType) => {
     setEditingDoc(doc);
+    const workflowId =
+      typeof doc.workflow === "string"
+        ? doc.workflow
+        : doc.workflow?._id ?? "";
     setFormData({
       ...getInitialFormData(),
       name: doc.name,
@@ -113,6 +125,7 @@ export const DocumentTypes: React.FC = () => {
       rules: doc.rules || [],
       integrationSettings: doc.integrationSettings || [],
       reviewCycle: doc.reviewCycle ?? 12,
+      workflow: workflowId,
     });
     setShowModal(true);
   };
@@ -355,6 +368,31 @@ export const DocumentTypes: React.FC = () => {
                   required
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Workflow
+                </label>
+                <select
+                  value={formData.workflow ?? ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, workflow: e.target.value })
+                  }
+                  className="input-field"
+                >
+                  <option value="">No workflow</option>
+                  {workflows.map((w) => (
+                    <option key={w._id} value={w._id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+                {workflows.length === 0 && (
+                  <p className="text-xs text-secondary-500 mt-1">
+                    No common workflows. Add them in Workflows first.
+                  </p>
+                )}
+              </div>
+
             </div>
           </div>
 
