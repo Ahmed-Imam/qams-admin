@@ -69,7 +69,7 @@ body {
   }
 
   .btn-primary {
-    @apply px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold rounded-xl shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 transition-all duration-300 transform hover:-translate-y-0.5;
+    @apply px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold rounded-xl shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 transition-all duration-300 transform hover:-translate-y-0.5 dark:bg-linear-to-br dark:from-blue-900 dark:to-indigo-950 dark:hover:from-blue-800 dark:hover:to-indigo-900 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900;
   }
 
   .btn-secondary {
