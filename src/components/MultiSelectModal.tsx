@@ -36,21 +36,32 @@ export const MultiSelectModal: React.FC<MultiSelectModalProps> = ({
   }, [isOpen, value]);
 
   const filteredOptions = useMemo(() => {
-    if (!searchTerm) return options;
-    const term = searchTerm.toLowerCase();
-    return options.filter(
-      (opt) =>
-        opt.label.toLowerCase().includes(term) ||
-        opt.value.toLowerCase().includes(term) ||
-        (opt.description && opt.description.toLowerCase().includes(term))
-    );
-  }, [options, searchTerm]);
+    let result = options;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = options.filter(
+        (opt) =>
+          opt.label.toLowerCase().includes(term) ||
+          opt.value.toLowerCase().includes(term) ||
+          (opt.description && opt.description.toLowerCase().includes(term)),
+      );
+    }
+
+    // Sort: selected items first
+    return [...result].sort((a, b) => {
+      const aSelected = localValue.includes(a.value);
+      const bSelected = localValue.includes(b.value);
+      if (aSelected && !bSelected) return -1;
+      if (!aSelected && bSelected) return 1;
+      return 0;
+    });
+  }, [options, searchTerm, localValue]);
 
   const toggleOption = (optValue: string) => {
     setLocalValue((prev) =>
       prev.includes(optValue)
         ? prev.filter((v) => v !== optValue)
-        : [...prev, optValue]
+        : [...prev, optValue],
     );
   };
 
@@ -169,10 +180,18 @@ export const MultiSelectModal: React.FC<MultiSelectModalProps> = ({
             Clear all
           </button>
           <div className="flex gap-3">
-            <button type="button" onClick={onClose} className="btn-secondary px-4 py-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn-secondary px-4 py-2"
+            >
               Cancel
             </button>
-            <button type="button" onClick={handleSave} className="btn-primary px-4 py-2">
+            <button
+              type="button"
+              onClick={handleSave}
+              className="btn-primary px-4 py-2"
+            >
               Confirm ({localValue.length})
             </button>
           </div>
