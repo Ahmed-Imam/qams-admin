@@ -7,6 +7,7 @@ import { ConfirmationModal } from "../components/ConfirmationModal";
 import { SlideInModal } from "../components/SlideInModal";
 import type { CreateDocumentTypeDto, DocumentType, Workflow } from "../types";
 import { DocumentTypeIntegration, DocumentTypeRule } from "../types";
+import { GridSkeleton } from "../components/GridSkeleton";
 
 const RULE_LABELS: Record<string, string> = {
   require_approval: "Require approval",
@@ -116,7 +117,7 @@ export const DocumentTypes: React.FC = () => {
     const workflowId =
       typeof doc.workflow === "string"
         ? doc.workflow
-        : doc.workflow?._id ?? "";
+        : (doc.workflow?._id ?? "");
     setFormData({
       ...getInitialFormData(),
       name: doc.name,
@@ -162,14 +163,6 @@ export const DocumentTypes: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 animate-fadeIn min-h-[calc(100vh-5rem)]">
       {/* Header */}
@@ -212,58 +205,75 @@ export const DocumentTypes: React.FC = () => {
       </div>
 
       {/* Document Types Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredDocumentTypes.map((doc, index) => (
-          <div
-            key={doc._id}
-            className="glass-card p-6 hover:border-primary-500/30 transition-all duration-300 animate-fadeIn"
-            style={{ animationDelay: `${index * 0.05}s` }}
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-primary-500/20 to-primary-600/10 border border-primary-500/20">
-                <FileStack className="w-6 h-6 text-primary-400" />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(doc)}
-                  className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => openDeleteConfirm(doc._id)}
-                  className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative">
+        {loading && documentTypes.length > 0 && (
+          <div className="absolute -top-6 left-0 w-full h-1 bg-secondary-800 overflow-hidden z-20 rounded-full">
+            <div className="h-full bg-primary-500 w-1/3 animate-[slide_1.5s_ease-in-out_infinite]"></div>
+          </div>
+        )}
 
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="text-lg font-semibold text-white">{doc.name}</h3>
-              <span className="text-xs px-2 py-0.5 rounded bg-secondary-700 text-secondary-300">
-                {doc.code}
-              </span>
-            </div>
-            {doc.description && (
-              <p className="text-sm text-secondary-400 line-clamp-2 mb-3">
-                {doc.description}
-              </p>
+        {loading && documentTypes.length === 0 ? (
+          <div className="col-span-full">
+            <GridSkeleton itemCount={6} hasHeader={false} hasFilters={false} />
+          </div>
+        ) : (
+          <>
+            {filteredDocumentTypes.map((doc) => (
+              <div
+                key={doc._id}
+                className="glass-card p-6 hover:border-primary-500/30 transition-all duration-300"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-primary-500/20 to-primary-600/10 border border-primary-500/20">
+                    <FileStack className="w-6 h-6 text-primary-400" />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEdit(doc)}
+                      className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => openDeleteConfirm(doc._id)}
+                      className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-lg font-semibold text-white">
+                    {doc.name}
+                  </h3>
+                  <span className="text-xs px-2 py-0.5 rounded bg-secondary-700 text-secondary-300">
+                    {doc.code}
+                  </span>
+                </div>
+                {doc.description && (
+                  <p className="text-sm text-secondary-400 line-clamp-2 mb-3">
+                    {doc.description}
+                  </p>
+                )}
+                <div className="text-xs text-secondary-500 space-y-1">
+                  <p>Review cycle: {doc.reviewCycle} months</p>
+                  {doc.createdAt && (
+                    <p>
+                      Created: {new Date(doc.createdAt).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {filteredDocumentTypes.length === 0 && (
+              <div className="col-span-full text-center py-12 min-h-[70vh]">
+                <FileStack className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
+                <p className="text-secondary-400">No document types found</p>
+              </div>
             )}
-            <div className="text-xs text-secondary-500 space-y-1">
-              <p>Review cycle: {doc.reviewCycle} months</p>
-              {doc.createdAt && (
-                <p>Created: {new Date(doc.createdAt).toLocaleDateString()}</p>
-              )}
-            </div>
-          </div>
-        ))}
-
-        {filteredDocumentTypes.length === 0 && (
-          <div className="col-span-full text-center py-12 min-h-[70vh]">
-            <FileStack className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
-            <p className="text-secondary-400">No document types found</p>
-          </div>
+          </>
         )}
       </div>
 
@@ -392,7 +402,6 @@ export const DocumentTypes: React.FC = () => {
                   </p>
                 )}
               </div>
-
             </div>
           </div>
 

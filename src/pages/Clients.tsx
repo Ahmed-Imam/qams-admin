@@ -19,6 +19,7 @@ import { usersAPI } from "../api/users";
 import type { Client, ClientType, CreateClientDto, User } from "../types";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 import clsx from "clsx";
+import { GridSkeleton } from "../components/GridSkeleton";
 
 const clientTypes: ClientType[] = [
   "hospital",
@@ -153,8 +154,6 @@ export const Clients: React.FC = () => {
     setUserDropdownOpen(false);
   };
 
-
-
   const fetchClientUsers = useCallback(async () => {
     if (!editingClient) return;
     setLoadingManageUsers(true);
@@ -247,14 +246,6 @@ export const Clients: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="relative space-y-6 animate-fadeIn min-h-[calc(100vh-5rem)]">
       {/* Header */}
@@ -316,70 +307,74 @@ export const Clients: React.FC = () => {
       </div>
 
       {/* Clients Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredClients.map((client, index) => (
-          <div
-            key={client._id}
-            className="glass-card p-6 hover:border-primary-500/30 transition-all duration-300 animate-fadeIn"
-            style={{ animationDelay: `${index * 0.05}s` }}
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-primary-500/20 to-primary-600/10 border border-primary-500/20">
-                <Building2 className="w-6 h-6 text-primary-400" />
-              </div>
-              <div className="relative group">
-                <button className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors">
-                  <MoreVertical className="w-5 h-5" />
-                </button>
-                <div className="absolute right-0 top-full mt-2 w-44 bg-secondary-800 border border-secondary-700/50 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-                  <button
-                    onClick={() => handleEdit(client)}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-secondary-300 hover:text-white hover:bg-secondary-700/50 transition-colors"
-                  >
-                    <Edit className="w-4 h-4" />
-                    Edit
+      {loading && clients.length === 0 ? (
+        <GridSkeleton itemCount={6} hasHeader={false} hasFilters={false} />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredClients.map((client, index) => (
+            <div
+              key={client._id}
+              className="glass-card p-6 hover:border-primary-500/30 transition-all duration-300 animate-fadeIn"
+              style={{ animationDelay: `${index * 0.05}s` }}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-primary-500/20 to-primary-600/10 border border-primary-500/20">
+                  <Building2 className="w-6 h-6 text-primary-400" />
+                </div>
+                <div className="relative group">
+                  <button className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors">
+                    <MoreVertical className="w-5 h-5" />
                   </button>
-                  <button
-                    onClick={() => openDeleteConfirm(client._id, client.name)}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors rounded-b-xl"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </button>
+                  <div className="absolute right-0 top-full mt-2 w-44 bg-secondary-800 border border-secondary-700/50 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                    <button
+                      onClick={() => handleEdit(client)}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm text-secondary-300 hover:text-white hover:bg-secondary-700/50 transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => openDeleteConfirm(client._id, client.name)}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors rounded-b-xl"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <h3 className="text-lg font-semibold text-white mb-2">
-              {client.name}
-            </h3>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                {client.name}
+              </h3>
 
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-secondary-400">
-                <span className="badge-info capitalize">{client.type}</span>
-                <span className="badge-success">{client.classification}</span>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2 text-secondary-400">
+                  <span className="badge-info capitalize">{client.type}</span>
+                  <span className="badge-success">{client.classification}</span>
+                </div>
+                <div className="flex items-center gap-2 text-secondary-400">
+                  <MapPin className="w-4 h-4" />
+                  <span className="truncate">{client.address}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-secondary-400">
-                <MapPin className="w-4 h-4" />
-                <span className="truncate">{client.address}</span>
+
+              <div className="mt-4 pt-4 border-t border-secondary-700/50">
+                <p className="text-xs text-secondary-500">
+                  Created: {new Date(client.createdAt).toLocaleDateString()}
+                </p>
               </div>
             </div>
+          ))}
 
-            <div className="mt-4 pt-4 border-t border-secondary-700/50">
-              <p className="text-xs text-secondary-500">
-                Created: {new Date(client.createdAt).toLocaleDateString()}
-              </p>
+          {filteredClients.length === 0 && (
+            <div className="col-span-full text-center py-12 min-h-[70vh]">
+              <Building2 className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
+              <p className="text-secondary-400">No clients found</p>
             </div>
-          </div>
-        ))}
-
-        {filteredClients.length === 0 && (
-          <div className="col-span-full text-center py-12 min-h-[70vh]">
-            <Building2 className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
-            <p className="text-secondary-400">No clients found</p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Modal */}
       <SlideInModal

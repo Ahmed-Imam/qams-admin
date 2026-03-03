@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { SlideInModal } from "../components/SlideInModal";
+import { TableSkeleton } from "../components/TableSkeleton";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -255,14 +256,6 @@ export const ActivityLogs: React.FC = () => {
     return "U";
   };
 
-  if (loading && logs.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Header */}
@@ -472,83 +465,87 @@ export const ActivityLogs: React.FC = () => {
 
       {/* Table */}
       <div className="flex-1 glass-card flex flex-col h-[calc(100vh-19rem)]">
-        <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar rounded-t-2xl">
-          <table className="w-full relative">
-            <thead className="sticky top-0 z-10 bg-secondary-900/95 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
-              <tr className="border-b border-secondary-700/50">
-                <th className="table-header">User</th>
-                <th className="table-header">Operation</th>
-                <th className="table-header">Entity</th>
-                <th className="table-header">Entity Name</th>
-                <th className="table-header">Timestamp</th>
-                <th className="table-header text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log, index) => (
-                <tr
-                  key={log._id}
-                  className="border-b border-secondary-700/30 hover:bg-secondary-800/30 transition-colors animate-fadeIn"
-                  style={{ animationDelay: `${index * 0.03}s` }}
-                >
-                  <td className="table-cell">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-semibold text-sm">
-                        {getUserInitials(log)}
-                      </div>
-                      <div>
-                        <div className="font-medium text-white">
-                          {getUserName(log)}
-                        </div>
-                        <div className="text-xs text-secondary-400">
-                          {getUserEmail(log)}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="table-cell">
-                    {getOperationBadge(log.operation)}
-                  </td>
-                  <td className="table-cell">
-                    <span className="text-sm font-medium text-secondary-200 capitalize">
-                      {log.entity.replace(/_/g, " ")}
-                    </span>
-                  </td>
-                  <td className="table-cell">
-                    <span className="text-sm text-secondary-300">
-                      {log.entityName || "-"}
-                    </span>
-                  </td>
-                  <td className="table-cell">
-                    <div className="flex flex-col">
-                      <div className="text-sm text-secondary-300">
-                        {format(new Date(log.ts), "MMM dd, yyyy")}
-                      </div>
-                      <div className="text-xs text-secondary-500">
-                        {format(new Date(log.ts), "HH:mm:ss")}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="table-cell text-right">
-                    <button
-                      onClick={() => setSelectedLog(log)}
-                      className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-primary-400 transition-colors"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                  </td>
+        {loading && logs.length === 0 ? (
+          <TableSkeleton rows={10} hasHeader={false} hasFilters={false} />
+        ) : (
+          <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar rounded-t-2xl">
+            <table className="w-full relative">
+              <thead className="sticky top-0 z-10 bg-secondary-900/95 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
+                <tr className="border-b border-secondary-700/50">
+                  <th className="table-header">User</th>
+                  <th className="table-header">Operation</th>
+                  <th className="table-header">Entity</th>
+                  <th className="table-header">Entity Name</th>
+                  <th className="table-header">Timestamp</th>
+                  <th className="table-header text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {logs.map((log, index) => (
+                  <tr
+                    key={log._id}
+                    className="border-b border-secondary-700/30 hover:bg-secondary-800/30 transition-colors animate-fadeIn"
+                    style={{ animationDelay: `${index * 0.03}s` }}
+                  >
+                    <td className="table-cell">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-semibold text-sm">
+                          {getUserInitials(log)}
+                        </div>
+                        <div>
+                          <div className="font-medium text-white">
+                            {getUserName(log)}
+                          </div>
+                          <div className="text-xs text-secondary-400">
+                            {getUserEmail(log)}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="table-cell">
+                      {getOperationBadge(log.operation)}
+                    </td>
+                    <td className="table-cell">
+                      <span className="text-sm font-medium text-secondary-200 capitalize">
+                        {log.entity.replace(/_/g, " ")}
+                      </span>
+                    </td>
+                    <td className="table-cell">
+                      <span className="text-sm text-secondary-300">
+                        {log.entityName || "-"}
+                      </span>
+                    </td>
+                    <td className="table-cell">
+                      <div className="flex flex-col">
+                        <div className="text-sm text-secondary-300">
+                          {format(new Date(log.ts), "MMM dd, yyyy")}
+                        </div>
+                        <div className="text-xs text-secondary-500">
+                          {format(new Date(log.ts), "HH:mm:ss")}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="table-cell text-right">
+                      <button
+                        onClick={() => setSelectedLog(log)}
+                        className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-primary-400 transition-colors"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-          {logs.length === 0 && !loading && (
-            <div className="text-center py-12">
-              <FileText className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
-              <p className="text-secondary-400">No activity logs found</p>
-            </div>
-          )}
-        </div>
+            {logs.length === 0 && !loading && (
+              <div className="text-center py-12">
+                <FileText className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
+                <p className="text-secondary-400">No activity logs found</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (

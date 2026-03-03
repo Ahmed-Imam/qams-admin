@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { workflowsAPI } from "../api/workflows";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 import { SlideInModal } from "../components/SlideInModal";
+import { GridSkeleton } from "../components/GridSkeleton";
 import type {
   CreateWorkflowDto,
   CreateWorkflowStepDto,
@@ -41,7 +42,9 @@ const getInitialStep = (): CreateWorkflowStepDto => ({
   roleType: "staff",
 });
 
-const getInitialFormData = (): CreateWorkflowDto & { steps: CreateWorkflowStepDto[] } => ({
+const getInitialFormData = (): CreateWorkflowDto & {
+  steps: CreateWorkflowStepDto[];
+} => ({
   name: "",
   description: "",
   initialStatus: "active",
@@ -78,7 +81,7 @@ export const Workflows: React.FC = () => {
   const filteredWorkflows = workflows.filter(
     (w) =>
       w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (w.description ?? "").toLowerCase().includes(searchQuery.toLowerCase())
+      (w.description ?? "").toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,9 +108,7 @@ export const Workflows: React.FC = () => {
       closeModal();
       fetchData();
     } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Operation failed"
-      );
+      toast.error(error?.response?.data?.message || "Operation failed");
     }
   };
 
@@ -145,7 +146,7 @@ export const Workflows: React.FC = () => {
       fetchData();
     } catch (error: any) {
       toast.error(
-        error?.response?.data?.message || "Failed to delete workflow"
+        error?.response?.data?.message || "Failed to delete workflow",
       );
     }
   };
@@ -170,11 +171,15 @@ export const Workflows: React.FC = () => {
     }));
   };
 
-  const updateStep = (index: number, field: keyof CreateWorkflowStepDto, value: unknown) => {
+  const updateStep = (
+    index: number,
+    field: keyof CreateWorkflowStepDto,
+    value: unknown,
+  ) => {
     setFormData((prev) => ({
       ...prev,
       steps: prev.steps.map((s, i) =>
-        i === index ? { ...s, [field]: value } : s
+        i === index ? { ...s, [field]: value } : s,
       ),
     }));
   };
@@ -193,21 +198,11 @@ export const Workflows: React.FC = () => {
     }));
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-        <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)] space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-shrink-0">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Workflows
-          </h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Workflows</h1>
           <p className="text-secondary-400">
             Manage common workflows (not tied to any client)
           </p>
@@ -234,68 +229,75 @@ export const Workflows: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-4">
-          {filteredWorkflows.map((workflow, index) => (
-          <div
-            key={workflow._id}
-            className="glass-card p-6 hover:border-primary-500/30 transition-all duration-300 animate-fadeIn"
-            style={{ animationDelay: `${index * 0.05}s` }}
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-primary-500/20 to-primary-600/10 border border-primary-500/20">
-                <GripVertical className="w-6 h-6 text-primary-400" />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(workflow)}
-                  className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => openDeleteConfirm(workflow._id)}
-                  className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+      <div className="flex-1 min-h-0 overflow-y-auto relative">
+        {loading && workflows.length > 0 && (
+          <div className="absolute -top-1 left-0 w-full h-1 bg-secondary-800 overflow-hidden z-20 rounded-full">
+            <div className="h-full bg-primary-500 w-1/3 animate-[slide_1.5s_ease-in-out_infinite]"></div>
+          </div>
+        )}
 
-            <h3 className="text-lg font-semibold text-white mb-2">
-              {workflow.name}
-            </h3>
-            {workflow.description && (
-              <p className="text-sm text-secondary-400 line-clamp-2 mb-3">
-                {workflow.description}
-              </p>
-            )}
-            <p className="text-xs text-secondary-500">
-              Steps: {workflow.steps?.length ?? 0}
-            </p>
-            {workflow.createdAt && (
-              <p className="text-xs text-secondary-500 mt-1">
-                Created: {new Date(workflow.createdAt).toLocaleDateString()}
-              </p>
+        {loading && workflows.length === 0 ? (
+          <GridSkeleton itemCount={6} hasHeader={false} hasFilters={false} />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-4">
+            {filteredWorkflows.map((workflow) => (
+              <div
+                key={workflow._id}
+                className="glass-card p-6 hover:border-primary-500/30 transition-all duration-300"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-primary-500/20 to-primary-600/10 border border-primary-500/20">
+                    <GripVertical className="w-6 h-6 text-primary-400" />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEdit(workflow)}
+                      className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => openDeleteConfirm(workflow._id)}
+                      className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  {workflow.name}
+                </h3>
+                {workflow.description && (
+                  <p className="text-sm text-secondary-400 line-clamp-2 mb-3">
+                    {workflow.description}
+                  </p>
+                )}
+                <p className="text-xs text-secondary-500">
+                  Steps: {workflow.steps?.length ?? 0}
+                </p>
+                {workflow.createdAt && (
+                  <p className="text-xs text-secondary-500 mt-1">
+                    Created: {new Date(workflow.createdAt).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            ))}
+
+            {filteredWorkflows.length === 0 && (
+              <div className="col-span-full text-center py-12">
+                <GripVertical className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
+                <p className="text-secondary-400">No workflows found</p>
+              </div>
             )}
           </div>
-          ))}
-
-          {filteredWorkflows.length === 0 && (
-            <div className="col-span-full text-center py-12">
-              <GripVertical className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
-              <p className="text-secondary-400">No workflows found</p>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       <SlideInModal
         isOpen={showModal}
         onClose={closeModal}
-        title={
-          editingWorkflow ? "Edit Workflow" : "Add New Workflow (Common)"
-        }
+        title={editingWorkflow ? "Edit Workflow" : "Add New Workflow (Common)"}
         icon={GripVertical}
         iconColor="primary"
         badges={
@@ -323,11 +325,7 @@ export const Workflows: React.FC = () => {
           </div>
         }
       >
-        <form
-          id="workflow-form"
-          onSubmit={handleSubmit}
-          className="space-y-6"
-        >
+        <form id="workflow-form" onSubmit={handleSubmit} className="space-y-6">
           <div className="glass-card p-4">
             <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
               Basic Information
@@ -437,7 +435,7 @@ export const Workflows: React.FC = () => {
                         updateStep(
                           stepIndex,
                           "action",
-                          e.target.value as WorkflowStepAction
+                          e.target.value as WorkflowStepAction,
                         )
                       }
                       className="input-field"
@@ -459,7 +457,7 @@ export const Workflows: React.FC = () => {
                         updateStep(
                           stepIndex,
                           "roleType",
-                          e.target.value as WorkflowStepRoleType
+                          e.target.value as WorkflowStepRoleType,
                         )
                       }
                       className="input-field"

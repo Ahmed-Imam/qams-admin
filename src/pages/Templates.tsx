@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { SlideInModal } from "../components/SlideInModal";
 import { ConfirmationModal } from "../components/ConfirmationModal";
+import { TableSkeleton } from "../components/TableSkeleton";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 import React, { useEffect, useMemo, useState } from "react";
@@ -330,14 +331,6 @@ export const Templates: React.FC = () => {
     });
   };
 
-  if (loading && templates.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 animate-fadeIn overflow-hidden">
       {/* Header */}
@@ -402,168 +395,187 @@ export const Templates: React.FC = () => {
 
       {/* Templates Table */}
       <div className="flex-1 glass-card flex flex-col h-[calc(100vh-19rem)]">
-        <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar rounded-t-2xl">
-          <table className="w-full relative">
-            <thead className="sticky top-0 z-10 bg-secondary-900/95 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
-              <tr className="border-b border-secondary-700/50 ">
-                <th className="table-header ">Template ID</th>
-                <th className="table-header max-w-xs">Name</th>
-                <th className="table-header">Type</th>
-                <th className="table-header">Doc Type</th>
-                <th className="table-header">Accreditations</th>
-                <th className="table-header">Facility Types</th>
-                <th className="table-header">Trigger IDs</th>
-                <th className="table-header text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {templates.map((template, index) => (
-                <tr
-                  key={template._id}
-                  className="border-b border-secondary-700/30 hover:bg-secondary-800/30 transition-colors animate-fadeIn"
-                  style={{ animationDelay: `${index * 0.03}s` }}
-                >
-                  <td className="table-cell">
-                    <span className="font-mono text-sm text-primary-400">
-                      {template.id}
-                    </span>
-                  </td>
-                  <td className="table-cell max-w-xs">
-                    <div className="min-w-0">
-                      <p
-                        className="font-medium text-white truncate"
-                        title={template.name}
-                      >
-                        {template.name}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="table-cell">
-                    <span className="px-2 py-1 rounded text-xs font-medium bg-blue-500/20 text-blue-400 capitalize">
-                      {template.templateType.replace("_", " ")}
-                    </span>
-                  </td>
-                  <td className="table-cell">
-                    <span className="text-secondary-300">{template.type}</span>
-                  </td>
-                  <td className="table-cell">
-                    <div className="flex flex-wrap gap-1">
-                      {template.accreditation?.slice(0, 2).map((acc) => (
-                        <span
-                          key={acc}
-                          className="px-2 py-0.5 rounded bg-secondary-800 text-xs text-secondary-300"
-                        >
-                          {acc}
+        {loading && templates.length === 0 ? (
+          <TableSkeleton
+            columns={7}
+            rows={10}
+            hasHeader={false}
+            hasFilters={false}
+          />
+        ) : (
+          <>
+            {loading && templates.length > 0 && (
+              <div className="absolute top-0 left-0 w-full h-1 bg-secondary-800 overflow-hidden z-20 rounded-t-xl">
+                <div className="h-full bg-primary-500 w-1/3 animate-[slide_1.5s_ease-in-out_infinite]"></div>
+              </div>
+            )}
+            <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar rounded-t-2xl">
+              <table className="w-full relative">
+                <thead className="sticky top-0 z-10 bg-secondary-900/95 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
+                  <tr className="border-b border-secondary-700/50 ">
+                    <th className="table-header ">Template ID</th>
+                    <th className="table-header max-w-xs">Name</th>
+                    <th className="table-header">Type</th>
+                    <th className="table-header">Doc Type</th>
+                    <th className="table-header">Accreditations</th>
+                    <th className="table-header">Facility Types</th>
+                    <th className="table-header">Trigger IDs</th>
+                    <th className="table-header text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {templates.map((template, index) => (
+                    <tr
+                      key={template._id}
+                      className="border-b border-secondary-700/30 hover:bg-secondary-800/30 transition-colors animate-fadeIn"
+                      style={{ animationDelay: `${index * 0.03}s` }}
+                    >
+                      <td className="table-cell">
+                        <span className="font-mono text-sm text-primary-400">
+                          {template.id}
                         </span>
-                      ))}
-                      {template.accreditation &&
-                        template.accreditation.length > 2 && (
-                          <span className="text-xs text-secondary-500">
-                            +{template.accreditation.length - 2}
-                          </span>
+                      </td>
+                      <td className="table-cell max-w-xs">
+                        <div className="min-w-0">
+                          <p
+                            className="font-medium text-white truncate"
+                            title={template.name}
+                          >
+                            {template.name}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="table-cell">
+                        <span className="px-2 py-1 rounded text-xs font-medium bg-blue-500/20 text-blue-400 capitalize">
+                          {template.templateType.replace("_", " ")}
+                        </span>
+                      </td>
+                      <td className="table-cell">
+                        <span className="text-secondary-300">
+                          {template.type}
+                        </span>
+                      </td>
+                      <td className="table-cell">
+                        <div className="flex flex-wrap gap-1">
+                          {template.accreditation?.slice(0, 2).map((acc) => (
+                            <span
+                              key={acc}
+                              className="px-2 py-0.5 rounded bg-secondary-800 text-xs text-secondary-300"
+                            >
+                              {acc}
+                            </span>
+                          ))}
+                          {template.accreditation &&
+                            template.accreditation.length > 2 && (
+                              <span className="text-xs text-secondary-500">
+                                +{template.accreditation.length - 2}
+                              </span>
+                            )}
+                        </div>
+                      </td>
+                      <td className="table-cell">
+                        <span className="text-secondary-300 text-xs">
+                          {template.facilityType?.length || 0} type
+                          {template.facilityType?.length !== 1 ? "s" : ""}
+                        </span>
+                      </td>
+                      <td className="table-cell">
+                        <span className="text-secondary-300 text-xs">
+                          {template.triggerIds?.length || 0} trigger
+                          {template.triggerIds?.length !== 1 ? "s" : ""}
+                        </span>
+                      </td>
+                      <td className="table-cell text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(template)}
+                            className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => openDeleteConfirm(template._id)}
+                            className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {templates.length === 0 && !loading && (
+                <div className="text-center py-12">
+                  <FileText className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
+                  <p className="text-secondary-400">No templates found</p>
+                </div>
+              )}
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="p-4 border-t border-secondary-700/30 flex items-center justify-between shrink-0 bg-secondary-900/50">
+              <p className="text-sm text-secondary-400">
+                Showing{" "}
+                <span className="font-medium text-white">
+                  {templates.length > 0 ? (page - 1) * limit + 1 : 0}
+                </span>{" "}
+                to{" "}
+                <span className="font-medium text-white">
+                  {Math.min(page * limit, totalTemplates)}
+                </span>{" "}
+                of{" "}
+                <span className="font-medium text-white">{totalTemplates}</span>{" "}
+                results
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1 || loading}
+                  className="p-2 rounded-lg hover:bg-secondary-700 text-secondary-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let p = i + 1;
+                    if (totalPages > 5) {
+                      if (page > 3) p = page - 2 + i;
+                      if (p > totalPages) p = totalPages - (4 - i);
+                      if (p < 1) p = i + 1;
+                    }
+
+                    return (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        className={clsx(
+                          "w-8 h-8 rounded-lg text-sm font-medium transition-colors",
+                          page === p
+                            ? "bg-primary-600 text-white"
+                            : "hover:bg-secondary-700 text-secondary-400 hover:text-white",
                         )}
-                    </div>
-                  </td>
-                  <td className="table-cell">
-                    <span className="text-secondary-300 text-xs">
-                      {template.facilityType?.length || 0} type
-                      {template.facilityType?.length !== 1 ? "s" : ""}
-                    </span>
-                  </td>
-                  <td className="table-cell">
-                    <span className="text-secondary-300 text-xs">
-                      {template.triggerIds?.length || 0} trigger
-                      {template.triggerIds?.length !== 1 ? "s" : ""}
-                    </span>
-                  </td>
-                  <td className="table-cell text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleEdit(template)}
-                        className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
                       >
-                        <Edit className="w-4 h-4" />
+                        {p}
                       </button>
-                      <button
-                        onClick={() => openDeleteConfirm(template._id)}
-                        className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    );
+                  })}
+                </div>
 
-          {templates.length === 0 && !loading && (
-            <div className="text-center py-12">
-              <FileText className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
-              <p className="text-secondary-400">No templates found</p>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages || loading}
+                  className="p-2 rounded-lg hover:bg-secondary-700 text-secondary-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-          )}
-        </div>
-
-        {/* Pagination Controls */}
-        <div className="p-4 border-t border-secondary-700/30 flex items-center justify-between shrink-0 bg-secondary-900/50">
-          <p className="text-sm text-secondary-400">
-            Showing{" "}
-            <span className="font-medium text-white">
-              {templates.length > 0 ? (page - 1) * limit + 1 : 0}
-            </span>{" "}
-            to{" "}
-            <span className="font-medium text-white">
-              {Math.min(page * limit, totalTemplates)}
-            </span>{" "}
-            of <span className="font-medium text-white">{totalTemplates}</span>{" "}
-            results
-          </p>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1 || loading}
-              className="p-2 rounded-lg hover:bg-secondary-700 text-secondary-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let p = i + 1;
-                if (totalPages > 5) {
-                  if (page > 3) p = page - 2 + i;
-                  if (p > totalPages) p = totalPages - (4 - i);
-                  if (p < 1) p = i + 1;
-                }
-
-                return (
-                  <button
-                    key={p}
-                    onClick={() => setPage(p)}
-                    className={clsx(
-                      "w-8 h-8 rounded-lg text-sm font-medium transition-colors",
-                      page === p
-                        ? "bg-primary-600 text-white"
-                        : "hover:bg-secondary-700 text-secondary-400 hover:text-white",
-                    )}
-                  >
-                    {p}
-                  </button>
-                );
-              })}
-            </div>
-
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages || loading}
-              className="p-2 rounded-lg hover:bg-secondary-700 text-secondary-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+          </>
+        )}
       </div>
 
       {/* Modal */}
