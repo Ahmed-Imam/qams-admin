@@ -5,7 +5,6 @@ import {
   ChevronRight,
   Eye,
   FileText,
-  Filter,
   Search,
   X,
 } from "lucide-react";

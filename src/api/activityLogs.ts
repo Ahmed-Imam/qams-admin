@@ -1,5 +1,4 @@
 import axiosInstance from "./axiosInstance";
-import type { PaginatedResponse } from "../types";
 
 export interface ActivityLogUser {
   _id: string;

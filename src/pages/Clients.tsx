@@ -8,7 +8,6 @@ import {
   Trash2,
   UserMinus,
   UserPlus,
-  Users,
   X,
   Filter,
 } from "lucide-react";
@@ -154,20 +153,7 @@ export const Clients: React.FC = () => {
     setUserDropdownOpen(false);
   };
 
-  const openManageUsers = (client: Client) => {
-    setEditingClient(client);
-    setFormData({
-      name: client.name,
-      type: client.type,
-      classification: client.classification,
-      address: client.address,
-    });
-    setActiveTab("users");
-    setShowModal(true);
-    setClientUsers([]);
-    setUserSearchQuery("");
-    setUserSearchResults([]);
-  };
+
 
   const fetchClientUsers = useCallback(async () => {
     if (!editingClient) return;
