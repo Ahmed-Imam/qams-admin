@@ -28,6 +28,7 @@ import { ConfirmationModal } from "../components/ConfirmationModal";
 import { SlideInModal } from "../components/SlideInModal";
 import { TableSkeleton } from "../components/TableSkeleton";
 import { FiltersBar } from "../components/FiltersBar";
+import { ModalSelectInput } from "../components/ModalSelectInput";
 
 const userStatuses: UserStatus[] = [
   "active",
@@ -61,6 +62,7 @@ export const Users: React.FC = () => {
     departmentId: "",
     status: "invited",
     isSuperAdmin: false,
+    clientIds: [],
   });
 
   // Delete confirmation state
@@ -108,14 +110,38 @@ export const Users: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      let user: User;
       if (editingUser) {
-        const { password, ...updateData } = formData;
-        await usersAPI.update(editingUser._id, updateData);
+        const { password, clientIds, ...updateData } = formData;
+        user = await usersAPI.update(editingUser._id, updateData);
         toast.success("User updated successfully");
       } else {
-        await usersAPI.create(formData);
+        const { clientIds, ...createData } = formData;
+        user = await usersAPI.create(createData);
         toast.success("User created successfully");
       }
+
+      // Sync clients
+      const userId = user._id;
+      const currentClientIds = editingUser
+        ? editingUser.clients?.map((c: any) =>
+            typeof c === "object" ? c._id : c,
+          ) || []
+        : [];
+      const selectedClientIds = formData.clientIds || [];
+
+      const toAdd = selectedClientIds.filter(
+        (id) => !currentClientIds.includes(id),
+      );
+      const toRemove = currentClientIds.filter(
+        (id) => !selectedClientIds.includes(id),
+      );
+
+      await Promise.all([
+        ...toAdd.map((id) => clientsAPI.addUser(id, userId)),
+        ...toRemove.map((id) => clientsAPI.removeUser(id, userId)),
+      ]);
+
       closeModal();
       fetchData();
     } catch (error: any) {
@@ -137,6 +163,9 @@ export const Users: React.FC = () => {
           : user.department,
       status: user.status,
       isSuperAdmin: user.isSuperAdmin || false,
+      clientIds:
+        user.clients?.map((c: any) => (typeof c === "object" ? c._id : c)) ||
+        [],
     });
     setShowModal(true);
   };
@@ -170,6 +199,7 @@ export const Users: React.FC = () => {
       departmentId: "",
       status: "invited",
       isSuperAdmin: false,
+      clientIds: [],
     });
   };
 
@@ -638,6 +668,20 @@ export const Users: React.FC = () => {
                 </select>
               </div>
             </div>
+          </div>
+
+          {/* Client Access */}
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Client Access
+            </h3>
+            <ModalSelectInput
+              label="Assigned Clients"
+              placeholder="Select clients for this user..."
+              value={formData.clientIds || []}
+              onChange={(clientIds) => setFormData({ ...formData, clientIds })}
+              options={clients.map((c) => ({ value: c._id, label: c.name }))}
+            />
           </div>
 
           {/* Status & Permissions */}
