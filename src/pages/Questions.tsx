@@ -425,7 +425,7 @@ export const Questions: React.FC = () => {
       </div>
 
       {/* Questions Table */}
-      <div className="glass-card flex flex-col h-[calc(100vh-18rem)]">
+      <div className="glass-card flex flex-col h-[calc(100vh-16.5rem)]">
         {loading && questions.length === 0 ? (
           <TableSkeleton
             columns={8}

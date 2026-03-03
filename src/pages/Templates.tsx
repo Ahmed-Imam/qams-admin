@@ -394,7 +394,7 @@ export const Templates: React.FC = () => {
       </div>
 
       {/* Templates Table */}
-      <div className="flex-1 glass-card flex flex-col h-[calc(100vh-19rem)]">
+      <div className="flex-1 glass-card flex flex-col h-[calc(100vh-16.5rem)]">
         {loading && templates.length === 0 ? (
           <TableSkeleton
             columns={7}
