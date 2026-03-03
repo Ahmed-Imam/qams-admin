@@ -1,4 +1,4 @@
-import { Edit, FileStack, Plus, Search, Trash2, X } from "lucide-react";
+import { Edit, FileStack, Plus, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { documentTypesAPI } from "../api/documentTypes";
@@ -8,6 +8,7 @@ import { SlideInModal } from "../components/SlideInModal";
 import type { CreateDocumentTypeDto, DocumentType, Workflow } from "../types";
 import { DocumentTypeIntegration, DocumentTypeRule } from "../types";
 import { GridSkeleton } from "../components/GridSkeleton";
+import { FiltersBar } from "../components/FiltersBar";
 
 const RULE_LABELS: Record<string, string> = {
   require_approval: "Require approval",
@@ -183,26 +184,11 @@ export const DocumentTypes: React.FC = () => {
       </div>
 
       {/* Search */}
-      <div className="glass-card p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
-          <input
-            type="text"
-            placeholder="Search by name or code..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10 pr-10"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-secondary-500 hover:text-white hover:bg-secondary-700 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-      </div>
+      <FiltersBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search by name or code..."
+      />
 
       {/* Document Types Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative">

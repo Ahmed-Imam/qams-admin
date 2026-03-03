@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Shield, Plus, Search, Edit, Trash2, Check } from "lucide-react";
+import { Shield, Plus, Edit, Trash2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { rolesAPI } from "../api/roles";
 import { clientsAPI } from "../api/clients";
@@ -8,6 +8,7 @@ import clsx from "clsx";
 import { SlideInModal } from "../components/SlideInModal";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 import { GridSkeleton } from "../components/GridSkeleton";
+import { FiltersBar } from "../components/FiltersBar";
 
 const allPermissions = [
   "manage users",
@@ -104,13 +105,9 @@ export const Roles: React.FC = () => {
     }
   };
 
-  // Debounce search - this also handles the initial load
+  // Fetch on search change (debounce is handled inside FiltersBar)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchData(1, searchQuery);
-    }, 500);
-
-    return () => clearTimeout(timer);
+    fetchData(1, searchQuery);
   }, [searchQuery]);
 
   const handleLoadMore = () => {
@@ -197,18 +194,14 @@ export const Roles: React.FC = () => {
       </div>
 
       {/* Search */}
-      <div className="glass-card p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
-          <input
-            type="text"
-            placeholder="Search roles..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10"
-          />
-        </div>
-      </div>
+      <FiltersBar
+        searchQuery={searchQuery}
+        onSearchChange={(q) => {
+          setSearchQuery(q);
+          setPage(1);
+        }}
+        searchPlaceholder="Search roles..."
+      />
 
       {/* Roles Grid */}
       {loading && roles.length === 0 ? (

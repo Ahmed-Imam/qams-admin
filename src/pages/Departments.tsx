@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { FolderTree, Plus, Search, Edit, Trash2 } from "lucide-react";
+import { FolderTree, Plus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { departmentsAPI } from "../api/departments";
 import { clientsAPI } from "../api/clients";
 import type { Department, CreateDepartmentDto, Client } from "../types";
 import { SlideInModal } from "../components/SlideInModal";
 import { GridSkeleton } from "../components/GridSkeleton";
+import { FiltersBar } from "../components/FiltersBar";
 
 export const Departments: React.FC = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -13,7 +14,6 @@ export const Departments: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadMoreLoading, setLoadMoreLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -68,28 +68,14 @@ export const Departments: React.FC = () => {
     }
   };
 
-  // Initial fetch
+  // Initial fetch + re-fetch on search change (debounce handled by FiltersBar)
   useEffect(() => {
-    fetchData(1, "");
-  }, []);
-
-  // Handle Search Debounce
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-    }, 500);
-    return () => clearTimeout(timer);
+    fetchData(1, searchQuery);
   }, [searchQuery]);
-
-  // Effect for debounced search
-  useEffect(() => {
-    // Skip if it's the initial empty search or if we're just setting it back to ""
-    fetchData(1, debouncedSearch);
-  }, [debouncedSearch]);
 
   const handleLoadMore = () => {
     if (!loadMoreLoading && hasMore) {
-      fetchData(page + 1, debouncedSearch);
+      fetchData(page + 1, searchQuery);
     }
   };
 
@@ -159,18 +145,14 @@ export const Departments: React.FC = () => {
       </div>
 
       {/* Search */}
-      <div className="glass-card p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
-          <input
-            type="text"
-            placeholder="Search departments..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10"
-          />
-        </div>
-      </div>
+      <FiltersBar
+        searchQuery={searchQuery}
+        onSearchChange={(q) => {
+          setSearchQuery(q);
+          setPage(1);
+        }}
+        searchPlaceholder="Search departments..."
+      />
 
       {/* Departments Grid */}
       {loading && departments.length === 0 ? (

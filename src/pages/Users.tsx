@@ -2,12 +2,9 @@ import React, { useEffect, useState } from "react";
 import {
   Users as UsersIcon,
   Plus,
-  Search,
   Edit,
   Trash2,
   Shield,
-  X,
-  Filter,
   AlertCircle,
   ChevronLeft,
   ChevronRight,
@@ -30,6 +27,7 @@ import clsx from "clsx";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 import { SlideInModal } from "../components/SlideInModal";
 import { TableSkeleton } from "../components/TableSkeleton";
+import { FiltersBar } from "../components/FiltersBar";
 
 const userStatuses: UserStatus[] = [
   "active",
@@ -205,68 +203,49 @@ export const Users: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="glass-card p-4 flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
-          <input
-            type="text"
-            placeholder="Search users..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10 pr-10"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-secondary-500 hover:text-white hover:bg-secondary-700 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-        <div className="relative">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="input-field pl-10 pr-8 min-w-[150px]"
-          >
-            <option value="all" className="bg-secondary-800">
-              All Status
-            </option>
-            {userStatuses.map((status) => (
-              <option
-                key={status}
-                value={status}
-                className="bg-secondary-800 capitalize"
-              >
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="relative">
-          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
-          <select
-            value={clientFilter}
-            onChange={(e) => setClientFilter(e.target.value)}
-            className="input-field pl-10 pr-8 min-w-[150px]"
-          >
-            <option value="all" className="bg-secondary-800">
-              All Clients
-            </option>
-            {clients.map((client) => (
-              <option
-                key={client._id}
-                value={client._id}
-                className="bg-secondary-800"
-              >
-                {client.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <FiltersBar
+        searchQuery={searchQuery}
+        onSearchChange={(q) => {
+          setSearchQuery(q);
+          setPage(1);
+        }}
+        searchPlaceholder="Search users..."
+        filters={[
+          {
+            icon: Shield,
+            value: statusFilter,
+            onChange: (v) => {
+              setStatusFilter(v);
+              setPage(1);
+            },
+            options: [
+              { value: "all", label: "All Status" },
+              ...userStatuses.map((s) => ({
+                value: s,
+                label: s.charAt(0).toUpperCase() + s.slice(1),
+              })),
+            ],
+          },
+          {
+            icon: Building2,
+            value: clientFilter,
+            onChange: (v) => {
+              setClientFilter(v);
+              setPage(1);
+            },
+            options: [
+              { value: "all", label: "All Clients" },
+              ...clients.map((c) => ({ value: c._id, label: c.name })),
+            ],
+          },
+        ]}
+        onResetAll={() => {
+          setSearchQuery("");
+          setStatusFilter("all");
+          setClientFilter("all");
+          setPage(1);
+        }}
+      />
 
       {/* Users Table */}
       <div className="glass-card flex flex-col h-[calc(100vh-16.5rem)]">

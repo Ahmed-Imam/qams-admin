@@ -4,12 +4,10 @@ import {
   MapPin,
   MoreVertical,
   Plus,
-  Search,
   Trash2,
   UserMinus,
   UserPlus,
-  X,
-  Filter,
+  Search,
 } from "lucide-react";
 import { SlideInModal } from "../components/SlideInModal";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -20,6 +18,7 @@ import type { Client, ClientType, CreateClientDto, User } from "../types";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 import clsx from "clsx";
 import { GridSkeleton } from "../components/GridSkeleton";
+import { FiltersBar } from "../components/FiltersBar";
 
 const clientTypes: ClientType[] = [
   "hospital",
@@ -264,47 +263,29 @@ export const Clients: React.FC = () => {
       </div>
 
       {/* Search and Filters */}
-      <div className="glass-card p-4 flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
-          <input
-            type="text"
-            placeholder="Search clients..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10 pr-10"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-secondary-500 hover:text-white hover:bg-secondary-700 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-        <div className="relative">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="input-field pl-10 pr-8 min-w-[150px]"
-          >
-            <option value="all" className="bg-secondary-800">
-              All Types
-            </option>
-            {clientTypes.map((type) => (
-              <option
-                key={type}
-                value={type}
-                className="bg-secondary-800 capitalize"
-              >
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <FiltersBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search clients..."
+        filters={[
+          {
+            icon: Building2,
+            value: typeFilter,
+            onChange: setTypeFilter,
+            options: [
+              { value: "all", label: "All Types" },
+              ...clientTypes.map((t) => ({
+                value: t,
+                label: t.charAt(0).toUpperCase() + t.slice(1),
+              })),
+            ],
+          },
+        ]}
+        onResetAll={() => {
+          setSearchQuery("");
+          setTypeFilter("all");
+        }}
+      />
 
       {/* Clients Grid */}
       {loading && clients.length === 0 ? (
