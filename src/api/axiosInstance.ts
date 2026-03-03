@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "https://dev-qams-api.1techhub.com/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "https://qams-api.kleem.io/api",
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",
