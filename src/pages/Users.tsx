@@ -2,12 +2,9 @@ import React, { useEffect, useState } from "react";
 import {
   Users as UsersIcon,
   Plus,
-  Search,
   Edit,
   Trash2,
   Shield,
-  X,
-  Filter,
   AlertCircle,
   ChevronLeft,
   ChevronRight,
@@ -29,6 +26,9 @@ import type {
 import clsx from "clsx";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 import { SlideInModal } from "../components/SlideInModal";
+import { TableSkeleton } from "../components/TableSkeleton";
+import { FiltersBar } from "../components/FiltersBar";
+import { ModalSelectInput } from "../components/ModalSelectInput";
 
 const userStatuses: UserStatus[] = [
   "active",
@@ -62,6 +62,7 @@ export const Users: React.FC = () => {
     departmentId: "",
     status: "invited",
     isSuperAdmin: false,
+    clientIds: [],
   });
 
   // Delete confirmation state
@@ -109,14 +110,38 @@ export const Users: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      let user: User;
       if (editingUser) {
-        const { password, ...updateData } = formData;
-        await usersAPI.update(editingUser._id, updateData);
+        const { password, clientIds, ...updateData } = formData;
+        user = await usersAPI.update(editingUser._id, updateData);
         toast.success("User updated successfully");
       } else {
-        await usersAPI.create(formData);
+        const { clientIds, ...createData } = formData;
+        user = await usersAPI.create(createData);
         toast.success("User created successfully");
       }
+
+      // Sync clients
+      const userId = user._id;
+      const currentClientIds = editingUser
+        ? editingUser.clients?.map((c: any) =>
+            typeof c === "object" ? c._id : c,
+          ) || []
+        : [];
+      const selectedClientIds = formData.clientIds || [];
+
+      const toAdd = selectedClientIds.filter(
+        (id) => !currentClientIds.includes(id),
+      );
+      const toRemove = currentClientIds.filter(
+        (id) => !selectedClientIds.includes(id),
+      );
+
+      await Promise.all([
+        ...toAdd.map((id) => clientsAPI.addUser(id, userId)),
+        ...toRemove.map((id) => clientsAPI.removeUser(id, userId)),
+      ]);
+
       closeModal();
       fetchData();
     } catch (error: any) {
@@ -138,6 +163,9 @@ export const Users: React.FC = () => {
           : user.department,
       status: user.status,
       isSuperAdmin: user.isSuperAdmin || false,
+      clientIds:
+        user.clients?.map((c: any) => (typeof c === "object" ? c._id : c)) ||
+        [],
     });
     setShowModal(true);
   };
@@ -171,6 +199,7 @@ export const Users: React.FC = () => {
       departmentId: "",
       status: "invited",
       isSuperAdmin: false,
+      clientIds: [],
     });
   };
 
@@ -183,51 +212,6 @@ export const Users: React.FC = () => {
     };
     return styles[status] || "badge-info";
   };
-
-  if (loading && users.length === 0) {
-    return (
-      <div className="space-y-6 animate-fadeIn">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <div className="h-8 w-32 bg-secondary-800 rounded animate-pulse mb-2"></div>
-            <div className="h-4 w-64 bg-secondary-800 rounded animate-pulse"></div>
-          </div>
-          <div className="h-10 w-32 bg-secondary-800 rounded animate-pulse"></div>
-        </div>
-        <div className="glass-card p-4 flex flex-col sm:flex-row gap-4">
-          <div className="h-10 flex-1 bg-secondary-800 rounded animate-pulse"></div>
-          <div className="h-10 w-40 bg-secondary-800 rounded animate-pulse"></div>
-        </div>
-        <div className="glass-card overflow-hidden">
-          <div className="p-4 border-b border-secondary-700/50 flex gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="h-6 flex-1 bg-secondary-800 rounded animate-pulse"
-              ></div>
-            ))}
-          </div>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              className="p-4 border-b border-secondary-700/30 flex gap-4"
-            >
-              <div className="flex items-center gap-3 flex-1">
-                <div className="w-10 h-10 rounded-full bg-secondary-800 animate-pulse"></div>
-                <div className="h-5 w-24 bg-secondary-800 rounded animate-pulse"></div>
-              </div>
-              {[1, 2, 3, 4, 5].map((j) => (
-                <div
-                  key={j}
-                  className="h-5 flex-1 bg-secondary-800 rounded animate-pulse mt-2"
-                ></div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -249,191 +233,186 @@ export const Users: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="glass-card p-4 flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
-          <input
-            type="text"
-            placeholder="Search users..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10 pr-10"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-secondary-500 hover:text-white hover:bg-secondary-700 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-        <div className="relative">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="input-field pl-10 pr-8 min-w-[150px]"
-          >
-            <option value="all" className="bg-secondary-800">
-              All Status
-            </option>
-            {userStatuses.map((status) => (
-              <option
-                key={status}
-                value={status}
-                className="bg-secondary-800 capitalize"
-              >
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="relative">
-          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
-          <select
-            value={clientFilter}
-            onChange={(e) => setClientFilter(e.target.value)}
-            className="input-field pl-10 pr-8 min-w-[150px]"
-          >
-            <option value="all" className="bg-secondary-800">
-              All Clients
-            </option>
-            {clients.map((client) => (
-              <option
-                key={client._id}
-                value={client._id}
-                className="bg-secondary-800"
-              >
-                {client.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <FiltersBar
+        searchQuery={searchQuery}
+        onSearchChange={(q) => {
+          setSearchQuery(q);
+          setPage(1);
+        }}
+        searchPlaceholder="Search users..."
+        filters={[
+          {
+            icon: Shield,
+            value: statusFilter,
+            onChange: (v) => {
+              setStatusFilter(v);
+              setPage(1);
+            },
+            options: [
+              { value: "all", label: "All Status" },
+              ...userStatuses.map((s) => ({
+                value: s,
+                label: s.charAt(0).toUpperCase() + s.slice(1),
+              })),
+            ],
+          },
+          {
+            icon: Building2,
+            value: clientFilter,
+            onChange: (v) => {
+              setClientFilter(v);
+              setPage(1);
+            },
+            options: [
+              { value: "all", label: "All Clients" },
+              ...clients.map((c) => ({ value: c._id, label: c.name })),
+            ],
+          },
+        ]}
+        onResetAll={() => {
+          setSearchQuery("");
+          setStatusFilter("all");
+          setClientFilter("all");
+          setPage(1);
+        }}
+      />
 
       {/* Users Table */}
-      <div className="glass-card flex flex-col h-[calc(100vh-18rem)]">
-        {loading && users.length > 0 && (
-          <div className="absolute top-0 left-0 w-full h-1 bg-secondary-800 overflow-hidden z-20 rounded-t-xl">
-            <div className="h-full bg-primary-500 w-1/3 animate-[slide_1.5s_ease-in-out_infinite]"></div>
-          </div>
-        )}
-        <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar rounded-t-2xl">
-          <table className="w-full relative">
-            <thead className="sticky top-0 z-10 bg-secondary-900/95 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
-              <tr>
-                <th className="table-header">User</th>
-                <th className="table-header">Email</th>
-                <th className="table-header">Type</th>
-                <th className="table-header">Role/Dept</th>
-                <th className="table-header">Clients</th>
-                <th className="table-header">Status</th>
-                <th className="table-header text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user, index) => (
-                <tr
-                  key={user._id}
-                  className="border-b border-secondary-700/30 hover:bg-secondary-800/30 transition-colors animate-fadeIn"
-                  style={{ animationDelay: `${index * 0.03}s` }}
-                >
-                  <td className="table-cell">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
-                        {(user.firstName || "?")[0]}
-                        {(user.lastName || "?")[0]}
-                      </div>
-                      <span className="font-medium text-white">
-                        {user.firstName} {user.lastName}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="table-cell">{user.email}</td>
-                  <td className="table-cell">
-                    {user.isSuperAdmin ? (
-                      <span className="flex items-center gap-1.5 text-amber-400">
-                        <Shield className="w-4 h-4" />
-                        Super Admin
-                      </span>
-                    ) : (
-                      <span className="text-secondary-400">Standard User</span>
-                    )}
-                  </td>
-                  <td className="table-cell">
-                    <div className="flex flex-col">
-                      <span className="text-primary-400 text-xs font-medium">
-                        {user.role && typeof user.role === "object"
-                          ? user.role.name
-                          : "N/A"}
-                      </span>
-                      <span className="text-secondary-500 text-[10px]">
-                        {user.department && typeof user.department === "object"
-                          ? user.department.name
-                          : "N/A"}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="table-cell">
-                    <div className="flex flex-wrap gap-1">
-                      {user.clients && user.clients.length > 0 ? (
-                        user.clients.map((client: any, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-1 rounded bg-secondary-800 text-xs text-secondary-300 flex items-center gap-1"
-                          >
-                            <Building2 className="w-3 h-3" />
-                            {typeof client === "object"
-                              ? client.name
-                              : "Unknown Client"}
+      <div className="glass-card flex flex-col h-[calc(100vh-16.5rem)]">
+        {loading && users.length === 0 ? (
+          <TableSkeleton
+            columns={7}
+            rows={9}
+            hasHeader={false}
+            hasFilters={false}
+          />
+        ) : (
+          <>
+            {loading && users.length > 0 && (
+              <div className="absolute top-0 left-0 w-full h-1 bg-secondary-800 overflow-hidden z-20 rounded-t-xl">
+                <div className="h-full bg-primary-500 w-1/3 animate-[slide_1.5s_ease-in-out_infinite]"></div>
+              </div>
+            )}
+            <div className="overflow-x-auto flex-1 overflow-y-auto relative custom-scrollbar rounded-t-2xl">
+              <table className="w-full relative">
+                <thead className="sticky top-0 z-10 bg-secondary-900/95 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
+                  <tr>
+                    <th className="table-header">User</th>
+                    <th className="table-header">Email</th>
+                    <th className="table-header">Type</th>
+                    <th className="table-header">Role/Dept</th>
+                    <th className="table-header">Clients</th>
+                    <th className="table-header">Status</th>
+                    <th className="table-header text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((user, index) => (
+                    <tr
+                      key={user._id}
+                      className="border-b border-secondary-700/30 hover:bg-secondary-800/30 transition-colors animate-fadeIn"
+                      style={{ animationDelay: `${index * 0.03}s` }}
+                    >
+                      <td className="table-cell">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+                            {(user.firstName || "?")[0]}
+                            {(user.lastName || "?")[0]}
+                          </div>
+                          <span className="font-medium text-white">
+                            {user.firstName} {user.lastName}
                           </span>
-                        ))
-                      ) : (
-                        <span className="text-secondary-500 text-xs text-italic">
-                          No Clients
+                        </div>
+                      </td>
+                      <td className="table-cell">{user.email}</td>
+                      <td className="table-cell">
+                        {user.isSuperAdmin ? (
+                          <span className="flex items-center gap-1.5 text-amber-400">
+                            <Shield className="w-4 h-4" />
+                            Super Admin
+                          </span>
+                        ) : (
+                          <span className="text-secondary-400">
+                            Standard User
+                          </span>
+                        )}
+                      </td>
+                      <td className="table-cell">
+                        <div className="flex flex-col">
+                          <span className="text-primary-400 text-xs font-medium">
+                            {user.role && typeof user.role === "object"
+                              ? user.role.name
+                              : "N/A"}
+                          </span>
+                          <span className="text-secondary-500 text-[10px]">
+                            {user.department &&
+                            typeof user.department === "object"
+                              ? user.department.name
+                              : "N/A"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="table-cell">
+                        <div className="flex flex-wrap gap-1">
+                          {user.clients && user.clients.length > 0 ? (
+                            user.clients.map((client: any, idx) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-1 rounded bg-secondary-800 text-xs text-secondary-300 flex items-center gap-1"
+                              >
+                                <Building2 className="w-3 h-3" />
+                                {typeof client === "object"
+                                  ? client.name
+                                  : "Unknown Client"}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-secondary-500 text-xs text-italic">
+                              No Clients
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="table-cell">
+                        <span className={getStatusBadge(user.status)}>
+                          {user.status}
                         </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="table-cell">
-                    <span className={getStatusBadge(user.status)}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="table-cell text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleEdit(user)}
-                        className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() =>
-                          openDeleteConfirm(
-                            user._id,
-                            `${user.firstName} ${user.lastName}`,
-                          )
-                        }
-                        className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      </td>
+                      <td className="table-cell text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(user)}
+                            className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() =>
+                              openDeleteConfirm(
+                                user._id,
+                                `${user.firstName} ${user.lastName}`,
+                              )
+                            }
+                            className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-          {users.length === 0 && !loading && (
-            <div className="text-center py-12 ">
-              <UsersIcon className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
-              <p className="text-secondary-400">No users found</p>
+              {users.length === 0 && !loading && (
+                <div className="text-center py-12 ">
+                  <UsersIcon className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
+                  <p className="text-secondary-400">No users found</p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
 
         {/* Pagination Controls */}
         <div className="p-4 border-t border-secondary-700/30 flex items-center justify-between shrink-0 bg-secondary-900/50">
@@ -689,6 +668,20 @@ export const Users: React.FC = () => {
                 </select>
               </div>
             </div>
+          </div>
+
+          {/* Client Access */}
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">
+              Client Access
+            </h3>
+            <ModalSelectInput
+              label="Assigned Clients"
+              placeholder="Select clients for this user..."
+              value={formData.clientIds || []}
+              onChange={(clientIds) => setFormData({ ...formData, clientIds })}
+              options={clients.map((c) => ({ value: c._id, label: c.name }))}
+            />
           </div>
 
           {/* Status & Permissions */}

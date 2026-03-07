@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Shield, Plus, Search, Edit, Trash2, Check } from "lucide-react";
+import { Shield, Plus, Edit, Trash2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { rolesAPI } from "../api/roles";
 import { clientsAPI } from "../api/clients";
@@ -7,6 +7,8 @@ import type { Role, CreateRoleDto, Client } from "../types";
 import clsx from "clsx";
 import { SlideInModal } from "../components/SlideInModal";
 import { ConfirmationModal } from "../components/ConfirmationModal";
+import { GridSkeleton } from "../components/GridSkeleton";
+import { FiltersBar } from "../components/FiltersBar";
 
 const allPermissions = [
   "manage users",
@@ -103,13 +105,9 @@ export const Roles: React.FC = () => {
     }
   };
 
-  // Debounce search - this also handles the initial load
+  // Fetch on search change (debounce is handled inside FiltersBar)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchData(1, searchQuery);
-    }, 500);
-
-    return () => clearTimeout(timer);
+    fetchData(1, searchQuery);
   }, [searchQuery]);
 
   const handleLoadMore = () => {
@@ -176,14 +174,6 @@ export const Roles: React.FC = () => {
     setFormData({ name: "", permissions: [], description: "", client: "" });
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 animate-fadeIn min-h-[calc(100vh-5rem)]">
       {/* Header */}
@@ -204,83 +194,83 @@ export const Roles: React.FC = () => {
       </div>
 
       {/* Search */}
-      <div className="glass-card p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
-          <input
-            type="text"
-            placeholder="Search roles..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10"
-          />
-        </div>
-      </div>
+      <FiltersBar
+        searchQuery={searchQuery}
+        onSearchChange={(q) => {
+          setSearchQuery(q);
+          setPage(1);
+        }}
+        searchPlaceholder="Search roles..."
+      />
 
       {/* Roles Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {roles.map((role, index) => (
-          <div
-            key={role._id}
-            className="glass-card p-6 hover:border-primary-500/30 transition-all duration-300 animate-fadeIn"
-            style={{ animationDelay: `${index * 0.05}s` }}
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/20">
-                <Shield className="w-6 h-6 text-amber-400" />
+      {loading && roles.length === 0 ? (
+        <GridSkeleton itemCount={6} hasHeader={false} hasFilters={false} />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {roles.map((role, index) => (
+            <div
+              key={role._id}
+              className="glass-card p-6 hover:border-primary-500/30 transition-all duration-300 animate-fadeIn"
+              style={{ animationDelay: `${index * 0.05}s` }}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/20">
+                  <Shield className="w-6 h-6 text-amber-400" />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(role)}
+                    className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => openDeleteConfirm(role._id, role.name)}
+                    className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(role)}
-                  className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => openDeleteConfirm(role._id, role.name)}
-                  className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+
+              <h3 className="text-lg font-semibold text-white mb-2">
+                {role.name}
+              </h3>
+              {role.description && (
+                <p className="text-sm text-secondary-400 mb-4">
+                  {role.description}
+                </p>
+              )}
+
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                  Permissions ({role.permissions.length})
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {role.permissions.slice(0, 4).map((perm) => (
+                    <span key={perm} className="badge-info text-xs">
+                      {perm}
+                    </span>
+                  ))}
+                  {role.permissions.length > 4 && (
+                    <span className="badge-info text-xs">
+                      +{role.permissions.length - 4} more
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
+          ))}
 
-            <h3 className="text-lg font-semibold text-white mb-2">
-              {role.name}
-            </h3>
-            {role.description && (
-              <p className="text-sm text-secondary-400 mb-4">
-                {role.description}
-              </p>
-            )}
-
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-secondary-500 uppercase tracking-wider">
-                Permissions ({role.permissions.length})
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {role.permissions.slice(0, 4).map((perm) => (
-                  <span key={perm} className="badge-info text-xs">
-                    {perm}
-                  </span>
-                ))}
-                {role.permissions.length > 4 && (
-                  <span className="badge-info text-xs">
-                    +{role.permissions.length - 4} more
-                  </span>
-                )}
-              </div>
+          {roles.length === 0 && (
+            <div className="col-span-full text-center py-12 ">
+              <Shield className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
+              <p className="text-secondary-400">No roles found</p>
             </div>
-          </div>
-        ))}
-
-        {roles.length === 0 && (
-          <div className="col-span-full text-center py-12 ">
-            <Shield className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
-            <p className="text-secondary-400">No roles found</p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Load More */}
       {hasMore && (

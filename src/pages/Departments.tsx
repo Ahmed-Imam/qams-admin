@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { FolderTree, Plus, Search, Edit, Trash2 } from "lucide-react";
+import { FolderTree, Plus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { departmentsAPI } from "../api/departments";
 import { clientsAPI } from "../api/clients";
 import type { Department, CreateDepartmentDto, Client } from "../types";
 import { SlideInModal } from "../components/SlideInModal";
+import { GridSkeleton } from "../components/GridSkeleton";
+import { FiltersBar } from "../components/FiltersBar";
 
 export const Departments: React.FC = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -12,7 +14,6 @@ export const Departments: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadMoreLoading, setLoadMoreLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -67,28 +68,14 @@ export const Departments: React.FC = () => {
     }
   };
 
-  // Initial fetch
+  // Initial fetch + re-fetch on search change (debounce handled by FiltersBar)
   useEffect(() => {
-    fetchData(1, "");
-  }, []);
-
-  // Handle Search Debounce
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-    }, 500);
-    return () => clearTimeout(timer);
+    fetchData(1, searchQuery);
   }, [searchQuery]);
-
-  // Effect for debounced search
-  useEffect(() => {
-    // Skip if it's the initial empty search or if we're just setting it back to ""
-    fetchData(1, debouncedSearch);
-  }, [debouncedSearch]);
 
   const handleLoadMore = () => {
     if (!loadMoreLoading && hasMore) {
-      fetchData(page + 1, debouncedSearch);
+      fetchData(page + 1, searchQuery);
     }
   };
 
@@ -138,14 +125,6 @@ export const Departments: React.FC = () => {
     setFormData({ name: "", description: "", client: "" });
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 animate-fadeIn min-h-[calc(100vh-5rem)]">
       {/* Header */}
@@ -166,73 +145,73 @@ export const Departments: React.FC = () => {
       </div>
 
       {/* Search */}
-      <div className="glass-card p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
-          <input
-            type="text"
-            placeholder="Search departments..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10"
-          />
-        </div>
-      </div>
+      <FiltersBar
+        searchQuery={searchQuery}
+        onSearchChange={(q) => {
+          setSearchQuery(q);
+          setPage(1);
+        }}
+        searchPlaceholder="Search departments..."
+      />
 
       {/* Departments Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {departments.map((dept, index) => (
-          <div
-            key={dept._id}
-            className="glass-card p-6 hover:border-primary-500/30 transition-all duration-300 animate-fadeIn"
-            style={{ animationDelay: `${index * 0.05}s` }}
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/20">
-                <FolderTree className="w-6 h-6 text-emerald-400" />
+      {loading && departments.length === 0 ? (
+        <GridSkeleton itemCount={9} hasHeader={false} hasFilters={false} />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {departments.map((dept, index) => (
+            <div
+              key={dept._id}
+              className="glass-card p-6 hover:border-primary-500/30 transition-all duration-300 animate-fadeIn"
+              style={{ animationDelay: `${index * 0.05}s` }}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/20">
+                  <FolderTree className="w-6 h-6 text-emerald-400" />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(dept)}
+                    className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(dept._id)}
+                    className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(dept)}
-                  className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(dept._id)}
-                  className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
 
-            <h3 className="text-lg font-semibold text-white mb-2">
-              {dept.name}
-            </h3>
-            {dept.description && (
-              <p className="text-sm text-secondary-400 line-clamp-2">
-                {dept.description}
-              </p>
-            )}
-
-            {dept.createdAt && (
-              <div className="mt-4 pt-4 border-t border-secondary-700/50">
-                <p className="text-xs text-secondary-500">
-                  Created: {new Date(dept.createdAt).toLocaleDateString()}
+              <h3 className="text-lg font-semibold text-white mb-2">
+                {dept.name}
+              </h3>
+              {dept.description && (
+                <p className="text-sm text-secondary-400 line-clamp-2">
+                  {dept.description}
                 </p>
-              </div>
-            )}
-          </div>
-        ))}
+              )}
 
-        {departments.length === 0 && (
-          <div className="col-span-full text-center py-12 ">
-            <FolderTree className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
-            <p className="text-secondary-400">No departments found</p>
-          </div>
-        )}
-      </div>
+              {dept.createdAt && (
+                <div className="mt-4 pt-4 border-t border-secondary-700/50">
+                  <p className="text-xs text-secondary-500">
+                    Created: {new Date(dept.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {departments.length === 0 && (
+            <div className="col-span-full text-center py-12 ">
+              <FolderTree className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
+              <p className="text-secondary-400">No departments found</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Pagination */}
       {hasMore && (

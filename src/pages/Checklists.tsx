@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { SlideInModal } from "../components/SlideInModal";
 import { ConfirmationModal } from "../components/ConfirmationModal";
+import { GridSkeleton } from "../components/GridSkeleton";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type {
@@ -1229,14 +1230,6 @@ export const Checklists: React.FC = () => {
     setEditingChecklist(null);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)] space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-shrink-0">
@@ -1278,68 +1271,77 @@ export const Checklists: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-4">
-          {checklists.map((checklist, index) => (
-            <div
-              key={checklist._id}
-              className="glass-card p-6 hover:border-primary-500/30 transition-all duration-300 animate-fadeIn"
-              style={{ animationDelay: `${index * 0.05}s` }}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-primary-500/20 to-primary-600/10 border border-primary-500/20">
-                  <ClipboardCheck className="w-6 h-6 text-primary-400" />
+      <div className="flex-1 min-h-0 overflow-y-auto relative">
+        {loading && checklists.length > 0 && (
+          <div className="absolute -top-1 left-0 w-full h-1 bg-secondary-800 overflow-hidden z-20 rounded-full">
+            <div className="h-full bg-primary-500 w-1/3 animate-[slide_1.5s_ease-in-out_infinite]"></div>
+          </div>
+        )}
+
+        {loading && checklists.length === 0 ? (
+          <GridSkeleton itemCount={6} hasHeader={false} hasFilters={false} />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-4">
+            {checklists.map((checklist) => (
+              <div
+                key={checklist._id}
+                className="glass-card p-6 hover:border-primary-500/30 transition-all duration-300"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-primary-500/20 to-primary-600/10 border border-primary-500/20">
+                    <ClipboardCheck className="w-6 h-6 text-primary-400" />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(checklist)}
+                      className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openDeleteConfirm(checklist)}
+                      className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleEdit(checklist)}
-                    className="p-2 rounded-lg hover:bg-secondary-700/50 text-secondary-400 hover:text-white transition-colors"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openDeleteConfirm(checklist)}
-                    className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                {checklist.name}
-              </h3>
-              {checklist.description && (
-                <p className="text-sm text-secondary-400 line-clamp-2 mb-3">
-                  {checklist.description}
-                </p>
-              )}
-              <div className="text-xs text-secondary-500 space-y-1">
-                {checklist.code && <p>Code: {checklist.code}</p>}
-                <p>{checklist.items?.length ?? 0} items</p>
-                <p>Frequency: {checklist.frequencyType}</p>
-                {checklist.requiresCapaOnFail && (
-                  <span className="inline-block px-2 py-0.5 rounded bg-amber-500/20 text-amber-400">
-                    CAPA on fail
-                  </span>
-                )}
-                {checklist.createdAt && (
-                  <p>
-                    Created:{" "}
-                    {new Date(checklist.createdAt).toLocaleDateString()}
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  {checklist.name}
+                </h3>
+                {checklist.description && (
+                  <p className="text-sm text-secondary-400 line-clamp-2 mb-3">
+                    {checklist.description}
                   </p>
                 )}
+                <div className="text-xs text-secondary-500 space-y-1">
+                  {checklist.code && <p>Code: {checklist.code}</p>}
+                  <p>{checklist.items?.length ?? 0} items</p>
+                  <p>Frequency: {checklist.frequencyType}</p>
+                  {checklist.requiresCapaOnFail && (
+                    <span className="inline-block px-2 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                      CAPA on fail
+                    </span>
+                  )}
+                  {checklist.createdAt && (
+                    <p>
+                      Created:{" "}
+                      {new Date(checklist.createdAt).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-          {checklists.length === 0 && !loading && (
-            <div className="col-span-full text-center py-12">
-              <ClipboardCheck className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
-              <p className="text-secondary-400">No common checklists found</p>
-            </div>
-          )}
-        </div>
+            ))}
+            {checklists.length === 0 && !loading && (
+              <div className="col-span-full text-center py-12">
+                <ClipboardCheck className="w-12 h-12 text-secondary-600 mx-auto mb-4" />
+                <p className="text-secondary-400">No common checklists found</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {totalPages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 mt-4 border-t border-secondary-700/50">

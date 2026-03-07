@@ -108,6 +108,7 @@ export interface CreateUserDto {
   roleId: string;
   departmentId: string;
   client?: string;
+  clientIds?: string[];
   status?: UserStatus;
   isSuperAdmin?: boolean;
 }
@@ -118,6 +119,7 @@ export interface UpdateUserDto {
   email?: string;
   roleId?: string;
   departmentId?: string;
+  clientIds?: string[];
   status?: UserStatus;
   isSuperAdmin?: boolean;
 }
