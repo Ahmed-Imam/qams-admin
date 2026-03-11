@@ -3,7 +3,8 @@ import { FolderTree, Plus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { departmentsAPI } from "../api/departments";
 import { clientsAPI } from "../api/clients";
-import type { Department, CreateDepartmentDto, Client } from "../types";
+import { rolesAPI } from "../api/roles";
+import type { Department, CreateDepartmentDto, Client, Role } from "../types";
 import { SlideInModal } from "../components/SlideInModal";
 import { GridSkeleton } from "../components/GridSkeleton";
 import { FiltersBar } from "../components/FiltersBar";
@@ -11,6 +12,7 @@ import { FiltersBar } from "../components/FiltersBar";
 export const Departments: React.FC = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadMoreLoading, setLoadMoreLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,6 +24,7 @@ export const Departments: React.FC = () => {
     name: "",
     description: "",
     client: "",
+    defaultRole: "",
   });
 
   const fetchData = async (
@@ -35,7 +38,7 @@ export const Departments: React.FC = () => {
         setLoadMoreLoading(true);
       }
 
-      const [deptsRes, clientsRes] = await Promise.all([
+      const [deptsRes, clientsRes, rolesRes] = await Promise.all([
         departmentsAPI.getAll({
           page: pageNumber,
           limit: 9,
@@ -43,6 +46,10 @@ export const Departments: React.FC = () => {
         }),
         // Only fetch clients on initial load or if not already fetched
         clients.length === 0 ? clientsAPI.getAll() : Promise.resolve(clients),
+        // Only fetch roles on initial load
+        roles.length === 0
+          ? rolesAPI.getAll({ limit: 100 })
+          : Promise.resolve(roles),
       ]);
 
       const newDeps = Array.isArray(deptsRes) ? deptsRes : deptsRes?.data || [];
@@ -60,6 +67,7 @@ export const Departments: React.FC = () => {
 
       setHasMore(pageNumber < totalPages);
       setClients(clientsRes || []);
+      setRoles(Array.isArray(rolesRes) ? rolesRes : rolesRes?.data || []);
     } catch (error) {
       toast.error("Failed to fetch data");
     } finally {
@@ -101,7 +109,14 @@ export const Departments: React.FC = () => {
     setFormData({
       name: dept.name,
       description: dept.description || "",
-      client: dept.client || "",
+      client:
+        typeof dept.client === "object"
+          ? (dept.client as any)._id
+          : dept.client || "",
+      defaultRole:
+        typeof dept.defaultRole === "object"
+          ? (dept.defaultRole as any)._id
+          : dept.defaultRole || "",
     });
     setShowModal(true);
   };
@@ -122,7 +137,7 @@ export const Departments: React.FC = () => {
   const closeModal = () => {
     setShowModal(false);
     setEditingDept(null);
-    setFormData({ name: "", description: "", client: "" });
+    setFormData({ name: "", description: "", client: "", defaultRole: "" });
   };
 
   return (
@@ -332,6 +347,33 @@ export const Departments: React.FC = () => {
                       className="bg-secondary-800"
                     >
                       {client.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-secondary-300 mb-2">
+                  Default Role
+                </label>
+                <select
+                  value={formData.defaultRole}
+                  onChange={(e) =>
+                    setFormData({ ...formData, defaultRole: e.target.value })
+                  }
+                  className="input-field"
+                  required
+                >
+                  <option value="" className="bg-secondary-800">
+                    Select a default role
+                  </option>
+                  {roles.map((role) => (
+                    <option
+                      key={role._id}
+                      value={role._id}
+                      className="bg-secondary-800"
+                    >
+                      {role.name}
                     </option>
                   ))}
                 </select>

@@ -786,7 +786,10 @@ export const Questions: React.FC = () => {
                       ) : null;
                     })()}
                     {/* Autocomplete input */}
-                    <div className="relative" ref={facilityTypeDropdownRef}>
+                    <div
+                      className="relative z-20"
+                      ref={facilityTypeDropdownRef}
+                    >
                       <input
                         ref={facilityTypeInputRef}
                         type="text"
@@ -820,7 +823,7 @@ export const Questions: React.FC = () => {
                       {showFacilityTypeDropdown &&
                         (filteredSuggestions.length > 0 ||
                           facilityTypeInput.trim()) && (
-                          <div className="absolute z-10 w-full mt-1 bg-secondary-800 border border-secondary-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                          <div className="absolute z-50 w-full mt-1 bg-secondary-800 border border-secondary-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                             {filteredSuggestions.length > 0 ? (
                               filteredSuggestions.map((suggestion) => (
                                 <button

@@ -111,13 +111,30 @@ export const Users: React.FC = () => {
     e.preventDefault();
     try {
       let user: User;
+      let primaryClientId: string | undefined;
+
       if (editingUser) {
         const { password, clientIds, ...updateData } = formData;
         user = await usersAPI.update(editingUser._id, updateData);
         toast.success("User updated successfully");
       } else {
         const { clientIds, ...createData } = formData;
-        user = await usersAPI.create(createData);
+
+        // Backend requires 'client' (singular) for creation
+        primaryClientId =
+          clientIds && clientIds.length > 0 ? clientIds[0] : undefined;
+
+        if (!primaryClientId) {
+          toast.error("Please select at least one client for the user");
+          return;
+        }
+
+        const payload = {
+          ...createData,
+          client: primaryClientId,
+        };
+
+        user = await usersAPI.create(payload as CreateUserDto);
         toast.success("User created successfully");
       }
 
@@ -127,7 +144,9 @@ export const Users: React.FC = () => {
         ? editingUser.clients?.map((c: any) =>
             typeof c === "object" ? c._id : c,
           ) || []
-        : [];
+        : primaryClientId
+          ? [primaryClientId]
+          : [];
       const selectedClientIds = formData.clientIds || [];
 
       const toAdd = selectedClientIds.filter(
