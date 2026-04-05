@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import {
+  Award,
   Building2,
   ChevronLeft,
   ChevronRight,
@@ -62,6 +63,11 @@ const navItems: NavItem[] = [
     icon: <FileStack className="w-5 h-5" />,
   },
   {
+    path: "/accreditations",
+    label: "Accreditations",
+    icon: <Award className="w-5 h-5" />,
+  },
+  {
     path: "/workflows",
     label: "Workflows",
     icon: <GitBranch className="w-5 h-5" />,
@@ -102,7 +108,7 @@ export const Sidebar: React.FC = () => {
     <aside
       className={clsx(
         "fixed left-0 top-0 h-screen bg-secondary-900/95 backdrop-blur-xl border-r border-secondary-700/50 transition-all duration-300 z-50 flex flex-col",
-        isCollapsed ? "w-20" : "w-64"
+        isCollapsed ? "w-20" : "w-64",
       )}
     >
       {/* Header */}
@@ -141,7 +147,7 @@ export const Sidebar: React.FC = () => {
                 isActive
                   ? "text-white bg-gradient-to-r from-primary-500/20 to-primary-600/10 border-l-2 border-primary-400"
                   : "text-secondary-300 hover:text-white hover:bg-white/5",
-                isCollapsed && "justify-center px-3"
+                isCollapsed && "justify-center px-3",
               )
             }
             title={isCollapsed ? item.label : undefined}
@@ -177,7 +183,7 @@ export const Sidebar: React.FC = () => {
           onClick={handleLogout}
           className={clsx(
             "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200",
-            isCollapsed && "justify-center px-3"
+            isCollapsed && "justify-center px-3",
           )}
           title={isCollapsed ? "Logout" : undefined}
         >
