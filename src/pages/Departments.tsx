@@ -8,6 +8,7 @@ import type { Department, CreateDepartmentDto, Client, Role } from "../types";
 import { SlideInModal } from "../components/SlideInModal";
 import { GridSkeleton } from "../components/GridSkeleton";
 import { FiltersBar } from "../components/FiltersBar";
+import { ConfirmationModal } from "../components/ConfirmationModal";
 
 export const Departments: React.FC = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -20,6 +21,8 @@ export const Departments: React.FC = () => {
   const [hasMore, setHasMore] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingDept, setEditingDept] = useState<Department | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deptToDelete, setDeptToDelete] = useState<Department | null>(null);
   const [formData, setFormData] = useState<CreateDepartmentDto>({
     name: "",
     description: "",
@@ -121,10 +124,15 @@ export const Departments: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this department?")) return;
+  const handleDeleteClick = (dept: Department) => {
+    setDeptToDelete(dept);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deptToDelete) return;
     try {
-      await departmentsAPI.delete(id);
+      await departmentsAPI.delete(deptToDelete._id);
       toast.success("Department deleted successfully");
       fetchData();
     } catch (error: any) {
@@ -192,7 +200,7 @@ export const Departments: React.FC = () => {
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(dept._id)}
+                    onClick={() => handleDeleteClick(dept)}
                     className="p-2 rounded-lg hover:bg-red-500/10 text-secondary-400 hover:text-red-400 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -382,6 +390,19 @@ export const Departments: React.FC = () => {
           </div>
         </form>
       </SlideInModal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setDeptToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete Department"
+        message="Are you sure you want to delete this department? This action cannot be undone."
+        itemName={deptToDelete?.name}
+      />
     </div>
   );
 };
