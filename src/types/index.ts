@@ -31,6 +31,7 @@ export interface Department {
   name: string;
   description?: string;
   client?: string;
+  defaultRole?: string | Role;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -149,6 +150,7 @@ export interface CreateDepartmentDto {
   name: string;
   description?: string;
   client: string;
+  defaultRole: string;
 }
 
 // Question types

@@ -111,13 +111,30 @@ export const Users: React.FC = () => {
     e.preventDefault();
     try {
       let user: User;
+      let primaryClientId: string | undefined;
+
       if (editingUser) {
         const { password, clientIds, ...updateData } = formData;
         user = await usersAPI.update(editingUser._id, updateData);
         toast.success("User updated successfully");
       } else {
         const { clientIds, ...createData } = formData;
-        user = await usersAPI.create(createData);
+
+        // Backend requires 'client' (singular) for creation
+        primaryClientId =
+          clientIds && clientIds.length > 0 ? clientIds[0] : undefined;
+
+        if (!primaryClientId) {
+          toast.error("Please select at least one client for the user");
+          return;
+        }
+
+        const payload = {
+          ...createData,
+          client: primaryClientId,
+        };
+
+        user = await usersAPI.create(payload as CreateUserDto);
         toast.success("User created successfully");
       }
 
@@ -127,7 +144,9 @@ export const Users: React.FC = () => {
         ? editingUser.clients?.map((c: any) =>
             typeof c === "object" ? c._id : c,
           ) || []
-        : [];
+        : primaryClientId
+          ? [primaryClientId]
+          : [];
       const selectedClientIds = formData.clientIds || [];
 
       const toAdd = selectedClientIds.filter(
@@ -440,13 +459,12 @@ export const Users: React.FC = () => {
 
             <div className="flex items-center gap-1">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let p = i + 1;
-                if (totalPages > 5) {
-                  if (page > 3) p = page - 2 + i;
-                  if (p > totalPages) p = totalPages - (4 - i);
-                  // Create a valid range, ensuring we don't go below 1
-                  if (p < 1) p = i + 1;
+                let startPage = Math.max(1, page - 2);
+                const endPage = Math.min(totalPages, startPage + 4);
+                if (endPage - startPage < 4) {
+                  startPage = Math.max(1, endPage - 4);
                 }
+                const p = startPage + i;
 
                 return (
                   <button

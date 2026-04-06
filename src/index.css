@@ -69,15 +69,15 @@ body {
   }
 
   .btn-primary {
-    @apply px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold rounded-xl shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 transition-all duration-300 transform hover:-translate-y-0.5 dark:from-blue-900 dark:to-indigo-950 dark:hover:from-blue-800 dark:hover:to-indigo-900 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900;
+    @apply px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold rounded-xl shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 transition-all duration-300 transform hover:-translate-y-0.5 dark:from-blue-900 dark:to-indigo-950 dark:hover:from-blue-800 dark:hover:to-indigo-900 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900 cursor-pointer;
   }
 
   .btn-secondary {
-    @apply px-6 py-3 bg-secondary-700 hover:bg-secondary-600 text-secondary-100 font-medium rounded-xl border border-secondary-600/50 transition-all duration-200;
+    @apply px-6 py-3 bg-secondary-700 hover:bg-secondary-600 text-secondary-100 font-medium rounded-xl border border-secondary-600/50 transition-all duration-200 cursor-pointer;
   }
 
   .btn-danger {
-    @apply px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-xl shadow-lg shadow-red-500/25 transition-all duration-300;
+    @apply px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-xl shadow-lg shadow-red-500/25 transition-all duration-300 cursor-pointer;
   }
 
   .sidebar-item {

@@ -582,12 +582,12 @@ export const ActivityLogs: React.FC = () => {
 
               <div className="flex items-center gap-1">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let p = i + 1;
-                  if (totalPages > 5) {
-                    if (page > 3) p = page - 2 + i;
-                    if (p > totalPages) p = totalPages - (4 - i);
-                    if (p < 1) p = i + 1;
+                  let startPage = Math.max(1, page - 2);
+                  const endPage = Math.min(totalPages, startPage + 4);
+                  if (endPage - startPage < 4) {
+                    startPage = Math.max(1, endPage - 4);
                   }
+                  const p = startPage + i;
 
                   return (
                     <button
