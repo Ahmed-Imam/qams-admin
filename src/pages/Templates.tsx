@@ -10,12 +10,9 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { SlideInModal } from "../components/SlideInModal";
-import { ConfirmationModal } from "../components/ConfirmationModal";
-import { TableSkeleton } from "../components/TableSkeleton";
+import React, { useEffect, useMemo, useState } from "react";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
-import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Accreditation } from "../api/accreditations";
 import { accreditationsAPI } from "../api/accreditations";
@@ -24,6 +21,9 @@ import { documentTypesAPI } from "../api/documentTypes";
 import { formsAPI, type Form } from "../api/forms";
 import { questionsAPI } from "../api/questions";
 import { templatesAPI } from "../api/templates";
+import { ConfirmationModal } from "../components/ConfirmationModal";
+import { SlideInModal } from "../components/SlideInModal";
+import { TableSkeleton } from "../components/TableSkeleton";
 import type {
   CreateTemplateDto,
   DocumentType,
@@ -117,6 +117,9 @@ export const Templates: React.FC = () => {
   const accreditationOptions = useMemo(() => {
     const list = accreditations.map((acc) => acc.name || acc.code).filter(Boolean);
     return Array.from(new Set(list));
+
+    return accreditations.map((acc) => acc.code).filter(Boolean);
+
   }, [accreditations]);
 
   const fetchQuestions = async () => {
