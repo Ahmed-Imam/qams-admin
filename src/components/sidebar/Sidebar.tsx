@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
+  Send,
   Settings,
   Shield,
   Users,
@@ -81,6 +82,11 @@ const navItems: NavItem[] = [
     path: "/checklists",
     label: "Checklists",
     icon: <ListChecks className="w-5 h-5" />,
+  },
+  {
+    path: "/demo-requests",
+    label: "Demo Requests",
+    icon: <Send className="w-5 h-5" />,
   },
   {
     path: "/activity-logs",

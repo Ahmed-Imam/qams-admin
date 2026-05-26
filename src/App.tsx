@@ -7,6 +7,7 @@ import { ActivityLogs } from "./pages/ActivityLogs";
 import { Checklists } from "./pages/Checklists";
 import { Clients } from "./pages/Clients";
 import { Dashboard } from "./pages/Dashboard";
+import { DemoRequests } from "./pages/DemoRequests";
 import { Departments } from "./pages/Departments";
 import { DocumentTypes } from "./pages/DocumentTypes";
 import { Forms } from "./pages/Forms";
@@ -84,6 +85,7 @@ const App: React.FC = () => {
           <Route path="workflows" element={<Workflows />} />
           <Route path="forms" element={<Forms />} />
           <Route path="checklists" element={<Checklists />} />
+          <Route path="demo-requests" element={<DemoRequests />} />
           <Route path="activity-logs" element={<ActivityLogs />} />
           <Route path="settings" element={<Settings />} />
         </Route>
