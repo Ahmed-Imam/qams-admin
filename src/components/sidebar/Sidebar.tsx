@@ -125,7 +125,7 @@ export const Sidebar: React.FC = () => {
               <div className="p-2 rounded-xl bg-gradient-to-br from-primary-500/20 to-primary-600/10 border border-primary-500/20">
                 <Shield className="w-6 h-6 text-primary-400" />
               </div>
-              <span className="text-lg font-bold text-white">QAMS Admin</span>
+              <span className="text-lg font-bold text-white">AccrediQ Admin</span>
             </div>
           )}
           <button

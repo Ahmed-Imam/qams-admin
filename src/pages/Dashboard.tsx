@@ -91,7 +91,7 @@ export const Dashboard: React.FC = () => {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
-        <p className="text-secondary-400">Welcome to QAMS Admin Portal</p>
+        <p className="text-secondary-400">Welcome to AccrediQ Admin Portal</p>
       </div>
 
       {loading && stats[0].value === 0 && users.length === 0 ? (

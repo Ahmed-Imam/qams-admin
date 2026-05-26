@@ -23,11 +23,11 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
           </div>
           
           <h1 className="text-5xl font-bold bg-gradient-to-r from-white via-primary-200 to-primary-400 bg-clip-text text-transparent mb-6">
-            QAMS Admin
+            AccrediQ Admin
           </h1>
           
           <p className="text-xl text-secondary-300 max-w-md leading-relaxed">
-            Quality Assurance Management System
+            Accreditation & Quality Management
             <span className="block mt-2 text-secondary-400 text-lg">
               Centralized administration portal
             </span>
@@ -62,7 +62,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
                 <div className="p-3 rounded-xl bg-gradient-to-br from-primary-500/20 to-primary-600/10 border border-primary-500/20">
                   <Shield className="w-8 h-8 text-primary-400" />
                 </div>
-                <span className="text-2xl font-bold text-white">QAMS Admin</span>
+                <span className="text-2xl font-bold text-white">AccrediQ Admin</span>
               </div>
             </div>
             
@@ -70,7 +70,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
           </div>
           
           <p className="text-center text-secondary-500 text-sm mt-6">
-            © 2024 QAMS. All rights reserved.
+            © 2026 AccrediQ. All rights reserved.
           </p>
         </div>
       </div>

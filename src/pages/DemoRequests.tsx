@@ -186,7 +186,7 @@ export const DemoRequests: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Demo Requests</h1>
           <p className="text-secondary-400">
-            Inbound requests from the QualityCore landing page.
+            Inbound requests from the AccrediQ landing page.
           </p>
         </div>
       </div>
